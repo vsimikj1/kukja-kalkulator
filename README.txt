@@ -1,26 +1,13 @@
-КАЛКУЛАТОР ЗА ГРАДБА – V14
+КАЛКУЛАТОР ЗА ГРАДБА – V14.2
 
-Што има V14:
-- Сите функции од V13.
-- Excel export останува со XLSX библиотеката што работеше во V13.
-- Mobile/responsive интерфејс за Android телефон.
-- PWA manifest + service worker (работи кога апликацијата е на HTTPS/localhost).
-- Google Drive секција.
-- Sync на JSON state + Excel фајл во Drive folder „Калкулатор за градба“.
-- Restore од Drive.
+Google Drive sync uses Google Identity Services (GIS) token client.
+IMPORTANT: Test Google Drive from the HTTPS GitHub Pages URL, not by opening index.html directly.
 
-ВАЖНО ЗА GOOGLE DRIVE:
-1. Направи Google Cloud project.
-2. Enable Google Drive API.
-3. Направи OAuth 2.0 Client ID -> Web application.
-4. Во Authorized JavaScript origins стави ја HTTPS адресата каде што ќе биде објавена апликацијата.
-5. Во апликацијата -> ☁️ Drive внеси го Client ID.
-6. Не внесувај Client Secret.
-7. Притисни „Поврзи / Синхронизирај“.
+GitHub Pages:
+https://vsimikj1.github.io/kukja-kalkulator/
 
-ВАЖНО:
-- Google OAuth и PWA не се сигурни кога index.html се отвора како file://.
-- За користење од телефон + лаптоп истовремено, апликацијата треба да биде објавена на HTTPS (пример GitHub Pages).
-- V14 сега ја има подготвено Drive интеграцијата; следниот чекор е deployment на HTTPS адреса и внесување на OAuth origin.
+Google OAuth JavaScript origin:
+https://vsimikj1.github.io
 
-Локалните податоци се чуваат со истиот localStorage key како претходните верзии, па постоечките податоци треба да останат достапни.
+The app keeps localStorage data and can sync JSON + XLSX to Google Drive.
+Excel export remains unchanged from V13/V14.

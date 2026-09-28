@@ -3,7 +3,7 @@ const phases=['Рушење','Ископ','Подрум','Темели','Кон�
 const defaults={grossArea:140,netArea:120,basementArea:50,basementHeight:2.4,levelHeight:2.7,otherHeight:3,reserve:10,eurRate:61.5,totalBudget:0,projectNote:'Нова куќа ~10×14 m, приземје, двоводен кров. Нов подрум околу 7×7 m. Старата куќа и стариот подрум се отстрануваат.'};
 let data=load()||{settings:{...defaults},budget:[],expenses:[],payments:[]};
 function load(){try{return JSON.parse(localStorage.getItem(DB))}catch{return null}}
-function save(){localStorage.setItem(DB,JSON.stringify(data))}
+function save(){localStorage.setItem(DB,JSON.stringify(data)); if(window.KK && window.KK.onDataChanged) window.KK.onDataChanged()}
 const $=id=>document.getElementById(id), money=v=>new Intl.NumberFormat('mk-MK').format(Math.round(v||0))+' ден', eur=v=>'€ '+((v||0)/(+data.settings.eurRate||61.5)).toFixed(2), esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 function init(){
  $('phase').innerHTML=phases.map(x=>`<option>${x}</option>`).join('');$('bPhase').innerHTML=phases.map(x=>`<option>${x}</option>`).join('');
@@ -11,9 +11,10 @@ function init(){
  $('expenseForm').onsubmit=addExpense;$('budgetForm').onsubmit=saveBudget;$('paymentForm').onsubmit=addPayment;
  $('editTotalBudget').onclick=toggleTotalBudgetEditor;$('offersAddBudget').onclick=()=>showTab('budget');$('saveTotalBudget').onclick=saveTotalBudget;$('autoTotalBudget').onclick=resetTotalBudgetAuto;
  $('usedBudgetCard').onclick=toggleExpenseDrilldown;$('closeExpenseModal').onclick=closeExpenseModal;$('offerPhaseFilter').onchange=renderOffers;$('offerChoiceFilter').onchange=renderOffers;$('offerSearch').oninput=renderOffers;$('clearOfferFilters').onclick=()=>{$('offerPhaseFilter').value='';$('offerChoiceFilter').value='';$('offerSearch').value='';renderOffers()};$('usedBudgetCard').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleExpenseDrilldown()}};$('closeExpenseDrilldown').onclick=()=>{$('expenseDrilldown').hidden=true};
- $('connectDrive').onclick=()=>{driveSaveClientId();driveSyncToDrive()};$('restoreDrive').onclick=()=>driveRestoreFromDrive();$('googleClientId').onchange=()=>driveSaveClientId();$('clearForm').onclick=clearExpense;$('closeOfferModal').onclick=closeOfferModal;$('saveSettings').onclick=saveSettings;$('resetData').onclick=resetAll;$('exportCsv').onclick=exportCsv;$('exportXlsx').onclick=exportXlsx;$('backupJson').onclick=backup;$('importJson').onchange=importJson;$('randomData').onclick=randomData;$('newBudgetItem').onclick=()=>{$('budgetForm').scrollIntoView({behavior:'smooth'});$('bItem').focus()};$('cancelBudget').onclick=clearBudgetForm;
+ $('clearForm').onclick=clearExpense;$('closeOfferModal').onclick=closeOfferModal;$('saveSettings').onclick=saveSettings;$('resetData').onclick=resetAll;$('exportCsv').onclick=exportCsv;$('exportXlsx').onclick=exportXlsx;$('backupJson').onclick=backup;$('importJson').onchange=importJson;$('randomData').onclick=randomData;$('newBudgetItem').onclick=()=>{$('budgetForm').scrollIntoView({behavior:'smooth'});$('bItem').focus()};$('cancelBudget').onclick=clearBudgetForm;
  render();
 }
+window.KK={getData:()=>data,setData:(d)=>{data=d;save();fillSettings();render()},save:save,onDataChanged:()=>{}};
 function today(){return new Date().toISOString().slice(0,10)}
 function tabs(){document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));b.classList.add('active');$(b.dataset.tab).classList.add('active');render()})}
 function showTab(n){document.querySelector(`[data-tab="${n}"]`).click()}

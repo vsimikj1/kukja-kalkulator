@@ -3,13 +3,13 @@
 <head>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Калкулатор за градба</title><link rel="stylesheet" href="styles.css"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#172033">
+<title>Калкулатор за градба</title><link rel="stylesheet" href="styles.css">
 
 </head>
 <body><main class="container">
 <header class="header"><div><h1>🏠 Калкулатор за градба</h1><p>Буџет · понуди · трошоци · плаќања · Excel</p></div></header>
 <nav class="tabs">
-<button class="tab active" data-tab="dashboard">Dashboard</button><button class="tab" data-tab="budget">Буџет</button><button class="tab" data-tab="offers">Понуди</button><button class="tab" data-tab="expense">+ Трошок</button><button class="tab" data-tab="payments">Плаќања</button><button class="tab" data-tab="settings">Параметри</button><button class="tab" data-tab="drive">☁️ Drive</button>
+<button class="tab active" data-tab="dashboard">Dashboard</button><button class="tab" data-tab="budget">Буџет</button><button class="tab" data-tab="offers">Понуди</button><button class="tab" data-tab="expense">+ Трошок</button><button class="tab" data-tab="payments">Плаќања</button><button class="tab" data-tab="drive">☁️ Drive</button><button class="tab" data-tab="settings">Параметри</button>
 </nav>
 <section id="dashboard" class="panel active">
 <div class="dashboard-hero">
@@ -41,14 +41,13 @@
 <div id="offerModal" class="modal" hidden><div class="modal-box"><div class="section-title"><div><h2>Детали за понуда</h2><p class="muted">Споредба на директно купување + работа со понудата од мајстор.</p></div><button type="button" class="secondary" id="closeOfferModal">Затвори</button></div><div id="offerDetail"></div></div></div><div id="expenseModal" class="modal" hidden><div class="modal-box"><div class="section-title"><div><h2>Детали за трошок</h2><p class="muted">Детален преглед на избраниот трошок и неговите плаќања.</p></div><button type="button" class="secondary" id="closeExpenseModal">Затвори</button></div><div id="expenseDetail"></div></div></div>
 <section id="drive" class="panel">
 <div class="section-card drive-card">
-  <div class="section-title"><div><h2>☁️ Google Drive</h2><p class="muted">Синхронизирај ги податоците и Excel фајлот на Google Drive за да ги користиш од телефон и лаптоп.</p></div><span class="drive-badge" id="driveStatus" data-kind="warn">Не е поврзан</span></div>
+  <div class="section-title"><div><h2>☁️ Google Drive</h2><p class="muted">Централна копија на податоците и Excel фајлот за користење од телефон и лаптоп.</p></div><span class="drive-badge" id="driveStatus" data-kind="warn">Не е поврзан</span></div>
   <div class="drive-grid">
-    <div class="drive-info-box"><strong>Google OAuth Client ID</strong><input id="googleClientId" placeholder="пример: 1234567890-xxxxx.apps.googleusercontent.com"><small>Овој ID се зачувува само локално во browser. Не внесувај Client Secret.</small></div>
-    <div class="drive-info-box"><strong>Статус</strong><span id="driveLastSync">Сè уште нема синхронизација</span><small>Drive folder: „Калкулатор за градба“</small></div>
+    <div class="drive-info-box"><strong>Google account</strong><span id="driveAccount">Не е најавен</span><small>Пристапот е само до фајловите што ги креира оваа апликација.</small></div>
+    <div class="drive-info-box"><strong>Последна синхронизација</strong><span id="driveLastSync">Сè уште нема синхронизација</span><small>Folder: „Калкулатор за градба“</small></div>
   </div>
-  <div class="actions drive-actions"><button class="primary" id="connectDrive">🔗 Поврзи / Синхронизирај</button><button class="secondary" id="restoreDrive">⬇️ Вчитај од Drive</button></div>
-  <div class="drive-note"><strong>Како работи:</strong> апликацијата го чува локалниот state и прави backup како <code>Kukja_Gradba_Data.json</code>. При Sync се ажурира и <code>Kukja_Gradba.xlsx</code>. За вистинско користење од телефон и лаптоп, V14 треба да биде објавена на HTTPS адреса (на пр. GitHub Pages).
-  </div>
+  <div class="actions drive-actions"><button class="primary" id="connectDrive">🔗 Поврзи Google Drive</button><button class="secondary" id="syncDrive" disabled>☁️ Синхронизирај сега</button><button class="secondary" id="restoreDrive" disabled>⬇️ Вчитај од Drive</button></div>
+  <div class="drive-note"><strong>Како работи:</strong> локалните податоци остануваат достапни и офлајн. Со Sync се ажурираат <code>Kukja_Gradba_Data.json</code> и <code>Kukja_Gradba.xlsx</code> во Google Drive. Excel exportот во Параметри останува непроменет.</div>
 </div></section>
 <section id="settings" class="panel"><div class="section-card"><h2>Параметри</h2><div class="form-grid"><label>Бруто m²<input id="grossArea" type="number"></label><label>Нето m²<input id="netArea" type="number"></label><label>Подрум m²<input id="basementArea" type="number"></label><label>Подрум висина<input id="basementHeight" type="number" step="0.01"></label><label>Висина над подрум<input id="levelHeight" type="number" step="0.01"></label><label>Останат дел висина<input id="otherHeight" type="number" step="0.01"></label><label>Резерва %<input id="reserve" type="number"></label><label>EUR/MKD<input id="eurRate" type="number" step="0.01"></label><label class="full">Забелешка<textarea id="projectNote" rows="4"></textarea></label></div><div class="actions"><button class="primary" id="saveSettings">Зачувај</button><button class="secondary" id="exportXlsx">Export Excel (.xlsx)</button><button class="secondary" id="backupJson">Backup JSON</button><label class="filebtn secondary">Import JSON<input id="importJson" type="file" accept="application/json"></label><button class="secondary" id="randomData">🧪 Додај random тест податоци</button><button class="danger" id="resetData">Избриши сè</button></div></div></section>
-</main><script src="https://accounts.google.com/gsi/client" async defer></script><script src="app.js"></script><script src="drive.js"></script><script>if("serviceWorker" in navigator && (location.protocol==="https:"||location.hostname==="localhost")){navigator.serviceWorker.register("sw.js").catch(()=>{});}</script></body></html>
+</main><script src="https://accounts.google.com/gsi/client" async defer></script><script src="app.js"></script><script src="drive.js"></script><link rel="manifest" href="manifest.webmanifest"><script>if("serviceWorker" in navigator && location.protocol==="https:"){navigator.serviceWorker.register("sw.js").catch(()=>{})}</script></body></html>
