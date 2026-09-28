@@ -5,7 +5,7 @@
   const FOLDER_NAME = 'Калкулатор за градба';
   const JSON_NAME = 'Kukja_Gradba_Data.json';
   const XLSX_NAME = 'Kukja_Gradba.xlsx';
-  const LS = 'kukja-drive-v2';
+  const LS = 'kukja-drive-v3';
   let tokenClient = null, accessToken = null, pendingAuth = null, busy = false;
   let gapiReady = false, gisReady = false;
   const $ = id => document.getElementById(id);
@@ -111,7 +111,15 @@
   }
   async function restore(){
     if(busy)return;busy=true;setStatus('Вчитување...','warn');setButtons(false);
-    try{await ensureAuth();const folderId=await ensureFolder();const file=await findFile(JSON_NAME,folderId);if(!file)throw new Error('Kukja_Gradba_Data.json не е пронајден во Drive.');const r=await api(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`);const d=await r.json();if(!d||!Array.isArray(d.budget)||!Array.isArray(d.expenses)||!Array.isArray(d.payments))throw new Error('Фајлот на Drive не е валиден backup.');if(!confirm('Да ги заменам локалните податоци со backup-от од Google Drive?'))return;window.KK.setData(d);const now=new Date().toLocaleString('mk-MK');setLastSync(now);setStatus('Вчитано од Drive','ok');}
+    try{await ensureAuth();const folderId=await ensureFolder();const file=await findFile(JSON_NAME,folderId);if(!file)throw new Error('Kukja_Gradba_Data.json не е пронајден во Drive.');let d;
+      if(window.gapi?.client?.drive?.files?.get){
+        const gr=await gapi.client.drive.files.get({fileId:file.id,alt:'media'});
+        const body=gr?.body ?? gr?.result ?? '';
+        d=typeof body==='string'?JSON.parse(body):body;
+      }else{
+        const r=await api(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`,{headers:{Accept:'application/json'}});
+        d=await r.json();
+      }if(!d||!Array.isArray(d.budget)||!Array.isArray(d.expenses)||!Array.isArray(d.payments))throw new Error('Фајлот на Drive не е валиден backup.');if(!confirm('Да ги заменам локалните податоци со backup-от од Google Drive?'))return;window.KK.setData(d);const now=new Date().toLocaleString('mk-MK');setLastSync(now);setStatus('Вчитано од Drive','ok');}
     catch(e){console.error(e);setStatus('Грешка','error');alert('Не успеа вчитувањето од Drive:\n'+e.message);}finally{busy=false;setButtons(!!accessToken);}
   }
   function connect(){ensureAuth(true).catch(e=>{console.error(e);alert('Google Drive не може да се поврзе:\n'+e.message);});}
