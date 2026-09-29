@@ -1,0 +1,1 @@
+V14.7 – Drive restore uses direct Drive API JSON download; old service workers/caches are cleared once and no new service worker is registered. Google Drive Sync remains unchanged.
