@@ -2,7 +2,7 @@ const DB='kukja-gradba-v2';
 const phases=['Рушење и ископ','Карабина','Прозори и ролетни','Врати','Електрична инсталација','Водовод','Топлотна пумпа','Кошулица','Керамика','Фасада','Останати трошкови'];
 const defaults={grossArea:140,netArea:120,basementArea:50,basementHeight:2.4,levelHeight:2.7,otherHeight:3,reserve:10,eurRate:61.5,totalBudget:0,projectNote:'Нова куќа ~10×14 m, приземје, двоводен кров. Нов подрум околу 7×7 m. Старата куќа и стариот подрум се отстрануваат.'};
 let data=load()||{settings:{...defaults},budget:[],expenses:[],payments:[]};
-function load(){try{return JSON.parse(localStorage.getItem(DB))}catch{return null}}
+function load(){try{const d=JSON.parse(localStorage.getItem(DB)); if(!d)return null; const map={'Рушење':'Рушење и ископ','Ископ':'Рушење и ископ','Подрум':'Карабина','Темели':'Карабина','Конструкција':'Карабина','Ytong':'Карабина','Кров':'Карабина','Прозори и врати':'Прозори и ролетни','Инсталации':'Електрична инсталација','Завршни работи':'Керамика','Друго':'Останати трошкови'}; const fix=x=>{if(x&&map[x])x.phase=map[x];return x}; if(Array.isArray(d.budget))d.budget.forEach(fix); if(Array.isArray(d.expenses))d.expenses.forEach(fix); return d}catch{return null}}
 function save(){localStorage.setItem(DB,JSON.stringify(data)); if(window.KK && window.KK.onDataChanged) window.KK.onDataChanged()}
 const $=id=>document.getElementById(id), money=v=>new Intl.NumberFormat('mk-MK').format(Math.round(v||0))+' ден', eur=v=>'€ '+((v||0)/(+data.settings.eurRate||61.5)).toFixed(2), esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
 function init(){
@@ -56,7 +56,7 @@ function renderOffers(){
  const phaseFilter=$('offerPhaseFilter').value||'';
  const choiceFilter=$('offerChoiceFilter').value||'';
  const search=$('offerSearch').value.trim().toLowerCase();
- const actualPhases=[...new Set(all.map(b=>String(b.phase||'').trim()).filter(Boolean))];
+ const actualPhases=phases.slice();
  const selectedPhase=actualPhases.includes(phaseFilter)?phaseFilter:'';
  $('offerPhaseFilter').innerHTML='<option value="">Сите фази</option>'+actualPhases.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
  $('offerPhaseFilter').value=selectedPhase;
