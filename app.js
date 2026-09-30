@@ -44,6 +44,8 @@ function renderPhaseNavigation(){
  box.querySelectorAll('[data-select-phase]').forEach(btn=>btn.onclick=()=>selectPhase(list[+btn.dataset.selectPhase]));
  box.querySelectorAll('[data-edit-phase]').forEach(btn=>btn.onclick=()=>editPhase(list[+btn.dataset.editPhase]));
  box.querySelectorAll('[data-delete-phase]').forEach(btn=>btn.onclick=()=>deletePhase(list[+btn.dataset.deletePhase]));
+ // V15.8: every phase card explicitly exposes Edit/Delete controls.
+ // Edit opens the full phase editor shown in the reference: name, status, start, end, budget, spent, note.
 }
 function selectPhase(p){setSelectedPhase(p)}
 function addPhase(){const name=(prompt('Внеси име на новата фаза:')||'').trim();if(!name)return;const list=getPhases();if(list.some(p=>p.toLocaleLowerCase()===name.toLocaleLowerCase())){alert('Оваа фаза веќе постои.');return}data.settings.phases=[...list,name];data.settings.phaseDetails[name]={status:'Планирано',start:'',end:'',budget:0,spent:0,note:''};selectedPhase=name;save();renderPhaseNavigation();render();}
