@@ -11,7 +11,7 @@
   const $ = id => document.getElementById(id);
   const driveState = () => { try { return JSON.parse(localStorage.getItem(LS)) || {}; } catch { return {}; } };
   const setDriveState = s => localStorage.setItem(LS, JSON.stringify(s));
-  function setStatus(text, kind='warn'){ if($('driveStatus')){$('driveStatus').textContent=text;$('driveStatus').dataset.kind=kind;} }
+  function setStatus(text, kind='warn'){ if($('driveStatus')){$('driveStatus').textContent=text;$('driveStatus').dataset.kind=kind;} if($('driveDockStatus')){$('driveDockStatus').textContent=text;} }
   function setButtons(enabled){ if($('syncDrive'))$('syncDrive').disabled=!enabled||busy; if($('restoreDrive'))$('restoreDrive').disabled=!enabled||busy; if($('downloadDriveXlsx'))$('downloadDriveXlsx').disabled=!enabled||busy; }
   function setLastSync(text){if($('driveLastSync'))$('driveLastSync').textContent=text;}
 
