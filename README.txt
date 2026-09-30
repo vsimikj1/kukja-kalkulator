@@ -1,10 +1,10 @@
-Калкулатор за градба – V15.4
+Kukja Kalkulator V15.5
 
-Промени:
-- Табот „Буџет“ е преименуван во „Фази“.
-- Фазите се прикажани како одделни копчиња, без dropdown во Фази.
-- Буџетските ставки се прикажуваат според избраната фаза.
-- Додадено е копче „＋ Додај фаза“.
-- Новите фази се зачувуваат во податоците и се синхронизираат преку Google Drive.
-- Постоечките буџетски ставки остануваат зачувани.
-- Drive Sync / Restore / Excel download се задржани.
+Visual redesign based on the supplied reference screenshot.
+- Reference background/card/border/accent colors
+- Header and summary cards matching the reference layout
+- Global progress bar
+- Tab styling matching the reference
+- Phase list rendered as large reference-style cards
+- Existing data, Drive sync/restore, Excel and phase functionality preserved
+- No budget/offer field redesign yet; those will be adjusted in later steps.

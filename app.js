@@ -11,7 +11,7 @@ function init(){
  renderPhaseNavigation(); setSelectedPhase(selectedPhase);
  $('date').value=today();$('paymentDate').value=today();fillSettings();tabs();
  $('expenseForm').onsubmit=addExpense;$('budgetForm').onsubmit=saveBudget;$('paymentForm').onsubmit=addPayment;
- $('editTotalBudget').onclick=toggleTotalBudgetEditor;$('offersAddBudget').onclick=openAddOffer;$('closeAddOffer').onclick=closeAddOffer;$('cancelAddOffer').onclick=closeAddOffer;$('offerForm').onsubmit=saveOffer;$('saveTotalBudget').onclick=saveTotalBudget;$('autoTotalBudget').onclick=resetTotalBudgetAuto;
+ $('editTotalBudget').onclick=toggleTotalBudgetEditor;$('offersAddBudget').onclick=()=>showTab('phases');$('saveTotalBudget').onclick=saveTotalBudget;$('autoTotalBudget').onclick=resetTotalBudgetAuto;
  $('usedBudgetCard').onclick=toggleExpenseDrilldown;$('closeExpenseModal').onclick=closeExpenseModal;$('offerPhaseFilter').onchange=renderOffers;$('offerChoiceFilter').onchange=renderOffers;$('offerSearch').oninput=renderOffers;$('clearOfferFilters').onclick=()=>{$('offerPhaseFilter').value='';$('offerChoiceFilter').value='';$('offerSearch').value='';renderOffers()};$('usedBudgetCard').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleExpenseDrilldown()}};$('closeExpenseDrilldown').onclick=()=>{$('expenseDrilldown').hidden=true};
  $('clearForm').onclick=clearExpense;$('closeOfferModal').onclick=closeOfferModal;$('addPhase').onclick=addPhase;$('saveSettings').onclick=saveSettings;$('resetData').onclick=resetAll;$('exportCsv').onclick=exportCsv;$('exportXlsx').onclick=exportXlsx;$('backupJson').onclick=backup;$('importJson').onchange=importJson;$('randomData').onclick=randomData;$('newBudgetItem').onclick=()=>{clearBudgetForm();$('budgetForm').scrollIntoView({behavior:'smooth'});$('bItem').focus()};$('cancelBudget').onclick=clearBudgetForm;
  render();
@@ -22,7 +22,24 @@ function tabs(){document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{docu
 function showTab(n){document.querySelector(`[data-tab="${n}"]`).click()}
 function fillSettings(){Object.keys(defaults).forEach(k=>{if($(k))$(k).value=data.settings[k]})}
 function setSelectedPhase(p){const list=getPhases();selectedPhase=list.includes(p)?p:(list[0]||BASE_PHASES[0]);const input=$('bPhase');if(input)input.value=selectedPhase;renderPhaseNavigation();const title=$('selectedPhaseTitle');if(title)title.textContent=selectedPhase;renderBudget()}
-function renderPhaseNavigation(){const box=$('phaseTabs');if(!box)return;const list=getPhases();if(!list.includes(selectedPhase))selectedPhase=list[0]||BASE_PHASES[0];box.innerHTML=list.map((p,i)=>`<button type="button" class="phase-tab ${p===selectedPhase?'active':''}" data-phase-index="${i}">${esc(p)}</button>`).join('');box.querySelectorAll('.phase-tab').forEach((btn,i)=>btn.onclick=()=>selectPhase(list[i]))}
+function renderPhaseNavigation(){
+ const box=$('phaseTabs');if(!box)return;
+ const list=getPhases();if(!list.includes(selectedPhase))selectedPhase=list[0]||BASE_PHASES[0];
+ const cards=list.map((p,i)=>{
+   const planned=data.budget.filter(b=>b.phase===p).reduce((s,b)=>s+budgetPlanned(b),0);
+   const actual=data.expenses.filter(x=>x.phase===p).reduce((s,x)=>s+(+x.total||0),0);
+   let status='Планирано', cls='status-planned';
+   if(planned>0 && actual>=planned){status='Завршено';cls='status-done'}
+   else if(actual>0){status='Во тек';cls='status-progress'}
+   return `<button type="button" class="phase-tab ${p===selectedPhase?'active ':''}${cls}" data-phase-index="${i}">
+      <span class="phase-card-name">${esc(p)}</span>
+      <span class="phase-card-status">${status}</span>
+      <span class="phase-card-meta">Буџет ${eur(planned)} · Потрошено ${eur(actual)}</span>
+   </button>`;
+ }).join('');
+ box.innerHTML=cards;
+ box.querySelectorAll('.phase-tab').forEach((btn,i)=>btn.onclick=()=>selectPhase(list[i]));
+}
 function selectPhase(p){setSelectedPhase(p)}
 function addPhase(){const name=(prompt('Внеси име на новата фаза:')||'').trim();if(!name)return;const list=getPhases();if(list.some(p=>p.toLocaleLowerCase()===name.toLocaleLowerCase())){alert('Оваа фаза веќе постои.');return}data.settings.phases=[...list,name];selectedPhase=name;save();renderPhaseNavigation();render();}
 
@@ -46,21 +63,23 @@ function toggleExpenseDrilldown(){const box=$('expenseDrilldown');box.hidden=!bo
 function renderDashboardExpenses(){const rows=data.expenses.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')) || data.expenses.indexOf(b)-data.expenses.indexOf(a));$('dashboardExpenseTable').innerHTML=rows.length?rows.map(x=>{const p=paidFor(x.id),r=x.total-p;return `<tr class="clickable-row" onclick="openExpenseDetail('${x.id}')"><td>${esc(x.date)}</td><td>${esc(x.phase)}</td><td>${esc(x.item)}</td><td>${esc(x.supplier||'—')}</td><td>${money(x.total)}</td><td>${money(p)}</td><td>${money(r)}</td></tr>`}).join(''):'<tr><td colspan="7" class="empty">Нема внесени трошоци.</td></tr>'}
 function render(){
  const planned=data.budget.reduce((s,b)=>s+budgetPlanned(b),0),actual=data.expenses.reduce((s,x)=>s+x.total,0),paid=data.expenses.reduce((s,x)=>s+paidFor(x.id),0),unpaid=actual-paid;
- const total=totalBudgetValue(),remaining=Math.max(0,total-actual),usedPct=total?actual/total*100:0; const completed=getPhases().filter(p=>phaseStats(p).complete).length; if($('dashboardCompleted'))$('dashboardCompleted').textContent=`${completed} од ${getPhases().length}`; if($('dashboardPlanned'))$('dashboardPlanned').textContent=money(planned); if($('dashboardSpent'))$('dashboardSpent').textContent=money(actual); if($('dashboardRemaining'))$('dashboardRemaining').textContent=money(remaining); if($('dashboardProgressBar'))$('dashboardProgressBar').style.width=Math.min(100,usedPct)+'%';
+ const total=totalBudgetValue(),remaining=Math.max(0,total-actual),usedPct=total?actual/total*100:0;
+ const phases=getPhases();
+ const completed=phases.filter(p=>{const pb=data.budget.filter(b=>b.phase===p).reduce((s,b)=>s+budgetPlanned(b),0);const ac=data.expenses.filter(x=>x.phase===p).reduce((s,x)=>s+(+x.total||0),0);return pb>0&&ac>=pb}).length;
+ const rate=+data.settings.eurRate||61.5;
+ const fmtEur=v=>'€ '+(v/rate).toLocaleString('de-DE',{minimumFractionDigits:0,maximumFractionDigits:0});
+ const setText=(id,v)=>{const el=$(id);if(el)el.textContent=v};
+ setText('summaryCompleted',`${completed} од ${phases.length}`);
+ setText('summaryBudget',fmtEur(total));
+ setText('summarySpent',fmtEur(actual));
+ setText('summaryRemaining',fmtEur(remaining));
+ const gp=$('globalProgressBar');if(gp)gp.style.width=Math.min(100,Math.max(0,usedPct))+'%';
+
  $('totalBudget').textContent=money(total);$('usedBudget').textContent=money(actual);$('remainingBudget').textContent=money(remaining);$('paidCost').textContent=money(paid);$('unpaidCost').textContent=money(unpaid);$('usedBudgetEur').textContent=eur(actual)+' · кликни за трошоци';$('progressText').textContent=Math.min(100,usedPct).toFixed(0)+'%';$('budgetUsedPercent').textContent=usedPct.toFixed(0)+'%';$('budgetUsedBar').style.width=Math.min(100,usedPct)+'%';$('totalBudgetHint').textContent=(+data.settings.totalBudget||0)>0?'рачно внесен буџет':'автоматски од буџетот + резерва';
  const donutPct=Math.min(100,Math.max(0,usedPct)),remainPct=Math.max(0,100-donutPct);$('budgetDonut').style.background=`conic-gradient(#ef4444 0 ${donutPct}%, #22c55e ${donutPct}% 100%)`;$('donutPercent').textContent=usedPct.toFixed(0)+'%';$('donutUsed').textContent=money(actual);$('donutRemaining').textContent=money(remaining);$('donutTotal').textContent=money(total);
- renderBudget();renderPhaseCards();renderDashboardPhaseCards();renderPhaseChart();renderRecent();renderExpenses();renderPayments();renderRefs();renderOffers();renderDashboardExpenses();
+ renderPhaseNavigation();renderBudget();renderPhaseChart();renderRecent();renderExpenses();renderPayments();renderRefs();renderOffers();renderDashboardExpenses();
 }
-function renderBudget(){const actualBy={};data.expenses.forEach(x=>actualBy[x.budgetId]=(actualBy[x.budgetId]||0)+x.total);const rows=data.budget.filter(b=>b.phase===selectedPhase);$('budgetTable').innerHTML=rows.length?rows.map(b=>{const d=b.material+b.labor+b.transport,v=budgetPlanned(b),a=actualBy[b.id]||0;return `<tr><td><strong>${esc(b.item)}</strong><br><span class="muted">${b.qty||0} ${esc(b.unit||'')}</span></td><td>${b.qty||0} ${esc(b.unit||'')}</td><td>${money(d)}</td><td>${money(b.contractor)}</td><td>${b.choice==='CONTRACTOR'?'Мајстор':'Директно'}</td><td>${money(v)}</td><td>${money(a)}</td><td>${money(v-a)}</td><td><button class="secondary small" onclick="editBudget('${b.id}')">Уреди</button> <button class="danger small" onclick="deleteBudget('${b.id}')">Избриши</button></td></tr>`}).join(''):'<tr><td colspan="9" class="empty">Нема ставки во оваа фаза.</td></tr>'}
-function phaseStats(p){const planned=data.budget.filter(b=>b.phase===p).reduce((s,b)=>s+budgetPlanned(b),0);const actual=data.expenses.filter(x=>x.phase===p).reduce((s,x)=>s+(+x.total||0),0);const complete=planned>0&&actual>=planned;return {planned,actual,complete};}
-function renderPhaseCards(){const box=$('phaseCards');if(!box)return;box.innerHTML=getPhases().map((p,i)=>{const st=phaseStats(p);const pct=st.planned?Math.min(100,st.actual/st.planned*100):0;const status=st.complete?'Завршено':st.actual>0?'Во тек':'Планирано';return `<article class="phase-card ${p===selectedPhase?'selected':''}" onclick="selectPhase('${esc(p).replace(/'/g,"\'")}')"><div class="phase-card-top"><div><h3>${esc(p)}</h3><p>Буџет ${money(st.planned)} · Потрошено ${money(st.actual)}</p></div><span class="phase-status ${st.complete?'done':''}">${status}</span></div><div class="phase-progress"><div style="width:${pct}%"></div></div><div class="phase-card-bottom"><span>${pct.toFixed(0)}% искористено</span><div class="phase-card-actions"><button class="secondary small" onclick="event.stopPropagation();editPhaseName(${i})">Уреди</button><button class="secondary small" onclick="event.stopPropagation();deletePhaseName(${i})">Избриши</button></div></div></article>`}).join('')}
-function renderDashboardPhaseCards(){const box=$('dashboardPhaseCards');if(!box)return;box.innerHTML=getPhases().map(p=>{const st=phaseStats(p);const pct=st.planned?Math.min(100,st.actual/st.planned*100):0;const status=st.complete?'Завршено':st.actual>0?'Во тек':'Планирано';return `<div class="dash-phase-row" onclick="showTab('phases');selectPhase('${esc(p).replace(/'/g,"\'")}')"><div><strong>${esc(p)}</strong><span>Буџет ${money(st.planned)} · Потрошено ${money(st.actual)}</span></div><div class="dash-phase-right"><span class="phase-status ${st.complete?'done':''}">${status}</span><b>${pct.toFixed(0)}%</b></div></div>`}).join('')}
-function editPhaseName(index){const list=getPhases();const old=list[index];if(!old)return;const name=(prompt('Ново име на фазата:',old)||'').trim();if(!name||name===old)return;if(list.some((p,i)=>i!==index&&p.toLocaleLowerCase()===name.toLocaleLowerCase())){alert('Оваа фаза веќе постои.');return}data.settings.phases=list.map((p,i)=>i===index?name:p);data.budget.forEach(b=>{if(b.phase===old)b.phase=name});data.expenses.forEach(x=>{if(x.phase===old)x.phase=name});if(selectedPhase===old)selectedPhase=name;save();render()}
-function deletePhaseName(index){const list=getPhases();const name=list[index];if(!name)return;if(data.budget.some(b=>b.phase===name)||data.expenses.some(x=>x.phase===name)){alert('Оваа фаза има буџетски ставки или трошоци. Прво избриши ги или префрли ги во друга фаза.');return}if(!confirm(`Да се избрише фазата „${name}“?`))return;data.settings.phases=list.filter((_,i)=>i!==index);if(!data.settings.phases.length)data.settings.phases=[...BASE_PHASES];if(selectedPhase===name)selectedPhase=data.settings.phases[0];save();render()}
-function openAddOffer(){const sel=$('offerPhaseInput');if(!sel)return;sel.innerHTML=getPhases().map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');sel.value=selectedPhase;['offerItemInput','offerUnitInput','offerNoteInput'].forEach(id=>$(id).value='');['offerQtyInput','offerMatInput','offerLaborInput','offerTransInput','offerContractorInput'].forEach(id=>$(id).value=id==='offerQtyInput'?1:0);$('offerChoiceInput').value='DIRECT';$('addOfferModal').hidden=false;$('offerItemInput').focus()}
-function closeAddOffer(){$('addOfferModal').hidden=true}
-function saveOffer(e){e.preventDefault();const b={id:crypto.randomUUID(),phase:$('offerPhaseInput').value,item:$('offerItemInput').value.trim(),qty:+$('offerQtyInput').value||0,unit:$('offerUnitInput').value.trim(),material:+$('offerMatInput').value||0,labor:+$('offerLaborInput').value||0,transport:+$('offerTransInput').value||0,contractor:+$('offerContractorInput').value||0,choice:$('offerChoiceInput').value,note:$('offerNoteInput').value.trim()};if(!b.item){alert('Внеси име на понудата.');return}data.budget.push(b);selectedPhase=b.phase;save();closeAddOffer();render();alert('Понудата е додадена.')}
-
+function renderBudget(){const actualBy={};data.expenses.forEach(x=>actualBy[x.budgetId]=(actualBy[x.budgetId]||0)+x.total);const rows=data.budget.filter(b=>b.phase===selectedPhase);$('budgetTable').innerHTML=rows.length?rows.map(b=>{const d=b.material+b.labor+b.transport,v=budgetPlanned(b),a=actualBy[b.id]||0;return `<tr><td>${esc(b.phase)}</td><td>${esc(b.item)}</td><td>${b.qty} ${esc(b.unit)}</td><td>${money(d)}</td><td>${money(b.contractor)}</td><td>${b.choice==='CONTRACTOR'?'Мајстор':'Директно'}</td><td>${money(v)}</td><td>${money(a)}</td><td>${money(v-a)}</td><td><button class="secondary" onclick="editBudget('${b.id}')">Уреди</button> <button class="danger small" onclick="deleteBudget('${b.id}')">×</button></td></tr>`}).join(''):'<tr><td colspan="10" class="empty">Нема буџетски ставки.</td></tr>'}
 function renderOffers(){
  const all=data.budget||[];
  const direct=all.reduce((s,b)=>s+(+b.material||0)+(+b.labor||0)+(+b.transport||0),0);
