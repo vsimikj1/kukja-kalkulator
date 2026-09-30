@@ -1,3 +1,4 @@
+// KK UI version 16.1 — Фази таб: само фази + Уреди/Избриши + Додај; без Ставка форма.
 const DB='kukja-gradba-v2';
 const BASE_PHASES=['Рушење и ископ','Карабина','Прозори и ролетни','Врати','Електрична инсталација','Водовод','Топлотна пумпа','Кошулица','Керамика','Фасада','Останати трошкови'];
 const defaults={phases:[...BASE_PHASES],phaseDetails:{},grossArea:140,netArea:120,basementArea:50,basementHeight:2.4,levelHeight:2.7,otherHeight:3,reserve:10,eurRate:61.5,totalBudget:0,projectNote:'Нова куќа ~10×14 m, приземје, двоводен кров. Нов подрум околу 7×7 m. Старата куќа и стариот подрум се отстрануваат.'};
@@ -10,10 +11,10 @@ const $=id=>document.getElementById(id), money=v=>new Intl.NumberFormat('mk-MK')
 function init(){
  renderPhaseNavigation(); setSelectedPhase(selectedPhase);
  $('date').value=today();$('paymentDate').value=today();fillSettings();tabs();
- if($('expenseForm'))$('expenseForm').onsubmit=addExpense;if($('budgetForm'))$('budgetForm').onsubmit=saveBudget;if($('paymentForm'))$('paymentForm').onsubmit=addPayment;
- $('editTotalBudget').onclick=toggleTotalBudgetEditor;$('offersAddBudget').onclick=()=>showTab('phases');$('saveTotalBudget').onclick=saveTotalBudget;$('autoTotalBudget').onclick=resetTotalBudgetAuto;
- $('usedBudgetCard').onclick=toggleExpenseDrilldown;$('closeExpenseModal').onclick=closeExpenseModal;$('offerPhaseFilter').onchange=renderOffers;$('offerChoiceFilter').onchange=renderOffers;$('offerSearch').oninput=renderOffers;$('clearOfferFilters').onclick=()=>{$('offerPhaseFilter').value='';$('offerChoiceFilter').value='';$('offerSearch').value='';renderOffers()};$('usedBudgetCard').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleExpenseDrilldown()}};$('closeExpenseDrilldown').onclick=()=>{$('expenseDrilldown').hidden=true};
- if($('clearForm'))$('clearForm').onclick=clearExpense;if($('phaseEditForm'))$('phaseEditForm').onsubmit=savePhaseEdit;if($('closePhaseEdit'))$('closePhaseEdit').onclick=closePhaseEdit;if($('closePhaseEdit2'))$('closePhaseEdit2').onclick=closePhaseEdit;if($('closeOfferModal'))$('closeOfferModal').onclick=closeOfferModal;if($('addPhase'))$('addPhase').onclick=addPhase;if($('saveSettings'))$('saveSettings').onclick=saveSettings;if($('resetData'))$('resetData').onclick=resetAll;if($('exportCsv'))$('exportCsv').onclick=exportCsv;if($('exportXlsx'))$('exportXlsx').onclick=exportXlsx;if($('backupJson'))$('backupJson').onclick=backup;if($('importJson'))$('importJson').onchange=importJson;if($('randomData'))$('randomData').onclick=randomData;if($('newBudgetItem'))$('newBudgetItem').onclick=()=>{clearBudgetForm();$('budgetForm').scrollIntoView({behavior:'smooth'});$('bItem').focus()};if($('cancelBudget'))$('cancelBudget').onclick=clearBudgetForm;
+ if($('expenseForm'))$('expenseForm').onsubmit=addExpense;if($('paymentForm'))$('paymentForm').onsubmit=addPayment;
+ $('editTotalBudget').onclick=toggleTotalBudgetEditor;$('offersAddBudget').onclick=()=>{};$('saveTotalBudget').onclick=saveTotalBudget;$('autoTotalBudget').onclick=resetTotalBudgetAuto;
+ $('usedBudgetCard').onclick=toggleExpenseDrilldown;$('closeExpenseModal').onclick=closeExpenseModal;$('offerPhaseFilter').onchange=renderOffers;$('usedBudgetCard').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleExpenseDrilldown()}};$('closeExpenseDrilldown').onclick=()=>{$('expenseDrilldown').hidden=true};
+ if($('clearForm'))$('clearForm').onclick=clearExpense;if($('phaseEditForm'))$('phaseEditForm').onsubmit=savePhaseEdit;if($('closePhaseEdit'))$('closePhaseEdit').onclick=closePhaseEdit;if($('closePhaseEdit2'))$('closePhaseEdit2').onclick=closePhaseEdit;if($('closeOfferModal'))$('closeOfferModal').onclick=closeOfferModal;if($('addPhase'))$('addPhase').onclick=addPhase;if($('saveSettings'))$('saveSettings').onclick=saveSettings;if($('resetData'))$('resetData').onclick=resetAll;if($('exportCsv'))$('exportCsv').onclick=exportCsv;if($('exportXlsx'))$('exportXlsx').onclick=exportXlsx;if($('backupJson'))$('backupJson').onclick=backup;if($('importJson'))$('importJson').onchange=importJson;if($('randomData'))$('randomData').onclick=randomData;
  render();
 }
 window.KK={getData:()=>data,setData:(d)=>{data={settings:{...defaults,...(d?.settings||{})},budget:Array.isArray(d?.budget)?d.budget:[],expenses:Array.isArray(d?.expenses)?d.expenses:[],payments:Array.isArray(d?.payments)?d.payments:[]};data.settings.phases=Array.isArray(data.settings.phases)&&data.settings.phases.length?data.settings.phases:[...BASE_PHASES];data.settings.phaseDetails=(data.settings.phaseDetails&&typeof data.settings.phaseDetails==='object')?data.settings.phaseDetails:{};selectedPhase=getPhases()[0]||BASE_PHASES[0];save();fillSettings();renderPhaseNavigation();render()},save:save,onDataChanged:()=>{}};
@@ -135,40 +136,12 @@ function render(){
 }
 function renderBudget(){if(!$('budgetTable'))return;const actualBy={};data.expenses.forEach(x=>actualBy[x.budgetId]=(actualBy[x.budgetId]||0)+x.total);const rows=data.budget.filter(b=>b.phase===selectedPhase);$('budgetTable').innerHTML=rows.length?rows.map(b=>{const d=b.material+b.labor+b.transport,v=budgetPlanned(b),a=actualBy[b.id]||0;return `<tr><td>${esc(b.phase)}</td><td>${esc(b.item)}</td><td>${b.qty} ${esc(b.unit)}</td><td>${money(d)}</td><td>${money(b.contractor)}</td><td>${b.choice==='CONTRACTOR'?'Мајстор':'Директно'}</td><td>${money(v)}</td><td>${money(a)}</td><td>${money(v-a)}</td><td><button class="secondary" onclick="editBudget('${b.id}')">Уреди</button> <button class="danger small" onclick="deleteBudget('${b.id}')">×</button></td></tr>`}).join(''):'<tr><td colspan="10" class="empty">Нема буџетски ставки.</td></tr>'}
 function renderOffers(){
- const all=data.budget||[];
- const direct=all.reduce((s,b)=>s+(+b.material||0)+(+b.labor||0)+(+b.transport||0),0);
- const contractor=all.reduce((s,b)=>s+(+b.contractor||0),0);
- const selected=all.reduce((s,b)=>s+budgetPlanned(b),0);
- const directCount=all.filter(b=>b.choice==='DIRECT').length, contractorCount=all.filter(b=>b.choice==='CONTRACTOR').length;
- $('offerSummary').innerHTML=`<div class="card"><span>Директно + работа</span><strong>${money(direct)}</strong><small>${directCount} избрани ставки</small></div><div class="card"><span>Понуди од мајстори</span><strong>${money(contractor)}</strong><small>${contractorCount} избрани ставки</small></div><div class="card"><span>Избран план</span><strong>${money(selected)}</strong><small>според изборот по ставка</small></div><div class="card"><span>Вкупно ставки</span><strong>${all.length}</strong><small>сите буџетски ставки</small></div>`;
-
- const phaseFilter=$('offerPhaseFilter').value||'';
- const choiceFilter=$('offerChoiceFilter').value||'';
- const search=$('offerSearch').value.trim().toLowerCase();
- const actualPhases=getPhases().slice();
- const selectedPhase=actualPhases.includes(phaseFilter)?phaseFilter:'';
- $('offerPhaseFilter').innerHTML='<option value="">Сите фази</option>'+actualPhases.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
- $('offerPhaseFilter').value=selectedPhase;
-
- const rows=all.filter(b=>{
-   const phase=String(b.phase||'').trim();
-   const item=String(b.item||'').toLowerCase();
-   const note=String(b.note||'').toLowerCase();
-   const phaseOk=!selectedPhase||phase===selectedPhase;
-   const choiceOk=!choiceFilter||b.choice===choiceFilter;
-   const searchOk=!search||`${phase} ${item} ${note}`.toLowerCase().includes(search);
-   return phaseOk&&choiceOk&&searchOk;
- });
-
- const actualBy={};(data.expenses||[]).forEach(x=>actualBy[x.budgetId]=(actualBy[x.budgetId]||0)+(+x.total||0));
- const filterInfo=`Прикажани ${rows.length} од ${all.length} ставки`;
- $('offerTable').innerHTML=(rows.length?rows.map(b=>{
-   const d=(+b.material||0)+(+b.labor||0)+(+b.transport||0), diff=d-(+b.contractor||0), a=actualBy[b.id]||0;
-   return `<tr class="clickable-row" onclick="openOfferDetail('${b.id}')"><td>${esc(String(b.phase||'').trim())}</td><td><strong>${esc(b.item)}</strong><br><span class="muted">${b.qty||0} ${esc(b.unit||'')}</span></td><td>${money(b.material)}</td><td>${money(b.labor)}</td><td>${money(b.transport)}</td><td>${money(d)}</td><td>${money(b.contractor)}</td><td class="${diff>=0?'offer-diff-positive':'offer-diff-negative'}">${diff>=0?'+':''}${money(diff)}</td><td class="${b.choice==='CONTRACTOR'?'offer-choice-contractor':'offer-choice-direct'}">${b.choice==='CONTRACTOR'?'Мајстор':'Директно'}</td><td>${money(a)}</td><td><button class="secondary small" onclick="event.stopPropagation();openOfferDetail('${b.id}')">Детали</button></td></tr>`;
- }).join(''):`<tr><td colspan="11" class="empty">Нема ставки што одговараат на избраните филтри.</td></tr>`);
- const old=document.getElementById('offerCountInfo');
- if(old) old.remove();
- const info=document.createElement('div');info.id='offerCountInfo';info.className='muted offer-count-info';info.textContent=filterInfo;$('offerTable').closest('.table-wrap').before(info);
+ const phases=getPhases();
+ const filter=$('offerPhaseFilter');
+ if(!filter)return;
+ const selected=filter.value||'';
+ filter.innerHTML='<option value="">Сите фази</option>'+phases.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
+ filter.value=phases.includes(selected)?selected:'';
 }
 
 function openOfferDetail(id){const b=data.budget.find(v=>v.id===id);if(!b)return;const direct=b.material+b.labor+b.transport,diff=direct-b.contractor,actual=data.expenses.filter(x=>x.budgetId===id).reduce((s,x)=>s+x.total,0);$('offerDetail').innerHTML=`<div class="detail-grid"><div class="detail-item"><span>Фаза</span><strong>${esc(b.phase)}</strong></div><div class="detail-item"><span>Ставка</span><strong>${esc(b.item)}</strong></div><div class="detail-item"><span>Количина</span><strong>${b.qty||0} ${esc(b.unit||'')}</strong></div><div class="detail-item"><span>Директен материјал</span><strong>${money(b.material)}</strong></div><div class="detail-item"><span>Работа</span><strong>${money(b.labor)}</strong></div><div class="detail-item"><span>Транспорт</span><strong>${money(b.transport)}</strong></div><div class="detail-item"><span>Директно + работа</span><strong>${money(direct)}</strong></div><div class="detail-item"><span>Понуда од мајстор</span><strong>${money(b.contractor)}</strong></div><div class="detail-item"><span>Разлика</span><strong>${diff>=0?'+':''}${money(diff)}</strong></div><div class="detail-item"><span>Избрано</span><strong>${b.choice==='CONTRACTOR'?'Мајстор':'Директно'}</strong></div><div class="detail-item"><span>Реално потрошено</span><strong>${money(actual)}</strong></div></div><div class="section-card"><h3>Забелешка</h3><p>${esc(b.note||'Нема забелешка.')}</p></div><div class="modal-actions"><button class="primary" onclick="editOfferFromModal('${b.id}')">Уреди понуда</button><button class="secondary" onclick="closeOfferModal()">Затвори</button></div>`;$('offerModal').hidden=false}

@@ -113,3 +113,6 @@ th{background:#f0eee9;color:#4d535a}
 .phase-edit-box{max-width:760px;}
 .phase-edit-form{grid-template-columns:repeat(2,1fr);margin-top:18px;}
 @media(max-width:650px){.phase-edit-form{grid-template-columns:1fr}.phase-tab{grid-template-columns:1fr!important}.phase-tab .phase-card-status{grid-column:1;grid-row:3;justify-self:start}.phase-card-actions{grid-column:1;grid-row:4;justify-content:flex-start}.phase-select{grid-column:1;grid-row:1 / span 2}}
+
+/* V16.2 — Понуди: само Додај + филтер по фаза */
+.offer-phase-only-filter{display:flex;justify-content:flex-start;max-width:260px;margin-top:18px}.offer-phase-only-filter label{width:100%}.offer-phase-only-filter select{width:100%}
