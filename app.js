@@ -48,11 +48,53 @@ function renderPhaseNavigation(){
  // Edit opens the full phase editor shown in the reference: name, status, start, end, budget, spent, note.
 }
 function selectPhase(p){setSelectedPhase(p)}
-function addPhase(){const name=(prompt('Внеси име на новата фаза:')||'').trim();if(!name)return;const list=getPhases();if(list.some(p=>p.toLocaleLowerCase()===name.toLocaleLowerCase())){alert('Оваа фаза веќе постои.');return}data.settings.phases=[...list,name];data.settings.phaseDetails[name]={status:'Планирано',start:'',end:'',budget:0,spent:0,note:''};selectedPhase=name;save();renderPhaseNavigation();render();}
+function addPhase(){
+ const f=$('phaseEditForm');
+ if(!f)return;
+ $('phaseEditTitle').textContent='Нова фаза';
+ $('phaseEditName').value='';
+ $('phaseEditStatus').value='Планирано';
+ $('phaseEditStart').value='';
+ $('phaseEditEnd').value='';
+ $('phaseEditBudget').value='';
+ $('phaseEditSpent').value='';
+ $('phaseEditNote').value='';
+ f.dataset.mode='new';
+ delete f.dataset.phase;
+ $('phaseEditModal').hidden=false;
+ setTimeout(()=>$('phaseEditName').focus(),50);
+}
 function ensurePhaseDetails(name){data.settings.phaseDetails=data.settings.phaseDetails||{};if(!data.settings.phaseDetails[name]){const planned=data.budget.filter(b=>b.phase===name).reduce((s,b)=>s+budgetPlanned(b),0);const actual=data.expenses.filter(x=>x.phase===name).reduce((s,x)=>s+(+x.total||0),0);data.settings.phaseDetails[name]={status:'Планирано',start:'',end:'',budget:planned,spent:actual,note:''};}return data.settings.phaseDetails[name];}
-function editPhase(name){const d=ensurePhaseDetails(name);$('phaseEditTitle').textContent='Уреди фаза';$('phaseEditName').value=name;$('phaseEditStatus').value=d.status||'Планирано';$('phaseEditStart').value=d.start||'';$('phaseEditEnd').value=d.end||'';$('phaseEditBudget').value=d.budget??0;$('phaseEditSpent').value=d.spent??0;$('phaseEditNote').value=d.note||'';$('phaseEditForm').dataset.phase=name;$('phaseEditModal').hidden=false;}
+function editPhase(name){const d=ensurePhaseDetails(name);$('phaseEditTitle').textContent='Уреди фаза';$('phaseEditName').value=name;$('phaseEditStatus').value=d.status||'Планирано';$('phaseEditStart').value=d.start||'';$('phaseEditEnd').value=d.end||'';$('phaseEditBudget').value=d.budget??0;$('phaseEditSpent').value=d.spent??0;$('phaseEditNote').value=d.note||'';$('phaseEditForm').dataset.mode='edit';$('phaseEditForm').dataset.phase=name;$('phaseEditModal').hidden=false;}
 function closePhaseEdit(){if($('phaseEditModal'))$('phaseEditModal').hidden=true}
-function savePhaseEdit(e){e.preventDefault();const oldName=$('phaseEditForm').dataset.phase;const newName=$('phaseEditName').value.trim();if(!newName){alert('Внеси име на фазата.');return}const list=getPhases();if(newName!==oldName&&list.some(p=>p.toLocaleLowerCase()===newName.toLocaleLowerCase())){alert('Оваа фаза веќе постои.');return}const d={status:$('phaseEditStatus').value,start:$('phaseEditStart').value,end:$('phaseEditEnd').value,budget:+$('phaseEditBudget').value||0,spent:+$('phaseEditSpent').value||0,note:$('phaseEditNote').value.trim()};data.settings.phaseDetails=data.settings.phaseDetails||{};delete data.settings.phaseDetails[oldName];data.settings.phaseDetails[newName]=d;data.settings.phases=list.map(p=>p===oldName?newName:p);if(oldName!==newName){data.budget.forEach(b=>{if(b.phase===oldName)b.phase=newName});data.expenses.forEach(x=>{if(x.phase===oldName)x.phase=newName});if(selectedPhase===oldName)selectedPhase=newName;}save();closePhaseEdit();setSelectedPhase(selectedPhase);render();}
+function savePhaseEdit(e){
+ e.preventDefault();
+ const form=$('phaseEditForm');
+ const mode=form.dataset.mode||'edit';
+ const oldName=form.dataset.phase||'';
+ const newName=$('phaseEditName').value.trim();
+ if(!newName){alert('Внеси име на фазата.');return}
+ const list=getPhases();
+ if((mode==='new'||newName!==oldName)&&list.some(p=>p.toLocaleLowerCase()===newName.toLocaleLowerCase())){alert('Оваа фаза веќе постои.');return}
+ const d={status:$('phaseEditStatus').value,start:$('phaseEditStart').value,end:$('phaseEditEnd').value,budget:+$('phaseEditBudget').value||0,spent:+$('phaseEditSpent').value||0,note:$('phaseEditNote').value.trim()};
+ data.settings.phaseDetails=data.settings.phaseDetails||{};
+ if(mode==='new'){
+   data.settings.phases=[...list,newName];
+   data.settings.phaseDetails[newName]=d;
+   selectedPhase=newName;
+ }else{
+   delete data.settings.phaseDetails[oldName];
+   data.settings.phaseDetails[newName]=d;
+   data.settings.phases=list.map(p=>p===oldName?newName:p);
+   if(oldName!==newName){data.budget.forEach(b=>{if(b.phase===oldName)b.phase=newName});data.expenses.forEach(x=>{if(x.phase===oldName)x.phase=newName});if(selectedPhase===oldName)selectedPhase=newName;}
+ }
+ save();
+ closePhaseEdit();
+ form.dataset.mode='edit';
+ delete form.dataset.phase;
+ setSelectedPhase(selectedPhase);
+ render();
+}
 function deletePhase(name){const linkedBudget=data.budget.some(b=>b.phase===name),linkedExpenses=data.expenses.some(x=>x.phase===name);if(linkedBudget||linkedExpenses){alert('Фазата не може да се избрише бидејќи има поврзани буџетски ставки или трошоци. Прво премести ги во друга фаза.');return}if(!confirm(`Да се избрише фазата „${name}“?`))return;data.settings.phases=getPhases().filter(p=>p!==name);if(data.settings.phaseDetails)delete data.settings.phaseDetails[name];selectedPhase=getPhases()[0]||BASE_PHASES[0];save();renderPhaseNavigation();render();}
 
 function saveSettings(){Object.keys(defaults).forEach(k=>{if(k==='phases')return;if(k==='projectNote')data.settings[k]=$(k).value;else if($(k))data.settings[k]=+$(k).value||0});save();render();alert('Параметрите се зачувани.')}
