@@ -145,17 +145,45 @@ function renderOffers(){
  filter.innerHTML='<option value="">Сите фази</option>'+phases.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
  filter.value=phases.includes(selected)?selected:'';
  const all=data.offers||[];
- const rows=all.filter(o=>!filter.value||o.phase===filter.value).slice().reverse();
+ const visiblePhases=filter.value?[filter.value]:phases;
  const lowestByPhase={};
  phases.forEach(phase=>{
    const phaseOffers=all.filter(o=>o.phase===phase && Number.isFinite(Number(o.amount)));
    if(phaseOffers.length) lowestByPhase[phase]=Math.min(...phaseOffers.map(o=>Number(o.amount)||0));
  });
- list.innerHTML=rows.length?rows.map(o=>{
-   const amount=Number(o.amount||0);
-   const isLowest=lowestByPhase[o.phase]!==undefined && amount===lowestByPhase[o.phase] && all.filter(x=>x.phase===o.phase).length>1;
-   return `<div class="offer-card"><div class="offer-card-main"><div><strong>${esc(o.supplier||'Без внесен мајстор / добавувач')}</strong><div class="muted">${esc(o.phase)} · ${esc(o.date||'—')}</div></div><div class="offer-amount ${isLowest?'offer-lowest':''}">${formatOfferAmount(amount)}${isLowest?' <span class="offer-lowest-label">· најниска</span>':''}</div></div><div class="offer-card-meta"><span>${esc(o.status||'Примена')}</span>${o.phone?`<span>☎ ${esc(o.phone)}</span>`:''}</div>${o.note?`<div class="offer-card-note">${esc(o.note)}</div>`:''}<div class="offer-card-actions"><button type="button" class="secondary small" onclick="editOffer('${o.id}')">Уреди</button><button type="button" class="danger small" onclick="deleteOffer('${o.id}')">Избриши</button></div></div>`;
- }).join(''):'<div class="empty">Нема понуди за избраната фаза.</div>';
+ const groups=visiblePhases.map(phase=>({
+   phase,
+   offers:all.filter(o=>o.phase===phase).slice().reverse()
+ })).filter(g=>g.offers.length);
+ if(!groups.length){list.innerHTML='<div class="empty">Нема понуди за избраната фаза.</div>';return;}
+ list.innerHTML=groups.map(g=>{
+   const phaseOffersCount=g.offers.length;
+   const rows=g.offers.map(o=>{
+     const amount=Number(o.amount||0);
+     const isLowest=lowestByPhase[o.phase]!==undefined && amount===lowestByPhase[o.phase] && phaseOffersCount>1;
+     return `<div class="offer-item">
+       <div class="offer-item-main">
+         <div class="offer-item-info">
+           <strong class="offer-supplier">${esc(o.supplier||'Без внесен мајстор / добавувач')}</strong>
+           <div class="muted">${esc(o.date||'—')}</div>
+         </div>
+         <div class="offer-item-right">
+           <div class="offer-amount ${isLowest?'offer-lowest':''}">${formatOfferAmount(amount)}${isLowest?' <span class="offer-lowest-label">· најниска</span>':''}</div>
+           <div class="offer-card-actions">
+             <button type="button" class="secondary small" onclick="editOffer('${o.id}')">Уреди</button>
+             <button type="button" class="danger small" onclick="deleteOffer('${o.id}')">Избриши</button>
+           </div>
+         </div>
+       </div>
+       <div class="offer-card-meta"><span>${esc(o.status||'Примена')}</span>${o.phone?`<span>☎ ${esc(o.phone)}</span>`:''}</div>
+       ${o.note?`<div class="offer-card-note">${esc(o.note)}</div>`:''}
+     </div>`;
+   }).join('');
+   return `<div class="offer-phase-group">
+     <div class="offer-phase-head"><div><strong>${esc(g.phase)}</strong><div class="offer-phase-count">${phaseOffersCount} ${phaseOffersCount===1?'понуда':'понуди'}</div></div></div>
+     <div class="offer-items">${rows}</div>
+   </div>`;
+ }).join('');
 }
 
 function addOffer(){
