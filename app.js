@@ -154,7 +154,7 @@ function renderOffers(){
  list.innerHTML=rows.length?rows.map(o=>{
    const amount=Number(o.amount||0);
    const isLowest=lowestByPhase[o.phase]!==undefined && amount===lowestByPhase[o.phase] && all.filter(x=>x.phase===o.phase).length>1;
-   return `<div class="offer-card"><div class="offer-card-main"><div><strong>${esc(o.supplier||'Без внесен мајстор / добавувач')}</strong><div class="muted">${esc(o.phase)} · ${esc(o.date||'—')}</div></div><div class="offer-amount ${isLowest?'offer-lowest':''}">${formatOfferAmount(amount)}${isLowest?' <span class="offer-lowest-label">· најниска</span>':''}</div></div><div class="offer-card-meta"><span>${esc(o.status||'Примена')}</span>${o.phone?`<span>☎ ${esc(o.phone)}</span>`:''}</div>${o.note?`<div class="offer-card-note">${esc(o.note)}</div>`:''}</div>`;
+   return `<div class="offer-card"><div class="offer-card-main"><div><strong>${esc(o.supplier||'Без внесен мајстор / добавувач')}</strong><div class="muted">${esc(o.phase)} · ${esc(o.date||'—')}</div></div><div class="offer-amount ${isLowest?'offer-lowest':''}">${formatOfferAmount(amount)}${isLowest?' <span class="offer-lowest-label">· најниска</span>':''}</div></div><div class="offer-card-meta"><span>${esc(o.status||'Примена')}</span>${o.phone?`<span>☎ ${esc(o.phone)}</span>`:''}</div>${o.note?`<div class="offer-card-note">${esc(o.note)}</div>`:''}<div class="offer-card-actions"><button type="button" class="secondary small" onclick="editOffer('${o.id}')">Уреди</button><button type="button" class="danger small" onclick="deleteOffer('${o.id}')">Избриши</button></div></div>`;
  }).join(''):'<div class="empty">Нема понуди за избраната фаза.</div>';
 }
 
@@ -169,14 +169,40 @@ function addOffer(){
  $('offerEditPhone').value='';
  $('offerEditStatus').value='Примена';
  $('offerEditNote').value='';
+ delete $('offerEditForm').dataset.edit;
+ $('offerEditModal').hidden=false;
+}
+function editOffer(id){
+ const o=(data.offers||[]).find(x=>x.id===id); if(!o)return;
+ const phases=getPhases();
+ $('offerEditTitle').textContent='Уреди понуда';
+ $('offerEditPhase').innerHTML=phases.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
+ $('offerEditPhase').value=o.phase||phases[0]||'';
+ $('offerEditSupplier').value=o.supplier||'';
+ $('offerEditAmount').value=o.amount??'';
+ $('offerEditDate').value=o.date||'';
+ $('offerEditPhone').value=o.phone||'';
+ $('offerEditStatus').value=o.status||'Примена';
+ $('offerEditNote').value=o.note||'';
+ $('offerEditForm').dataset.edit=id;
  $('offerEditModal').hidden=false;
 }
 function filterOfferPhaseForNew(){const f=$('offerPhaseFilter');const v=f?.value||'';return getPhases().includes(v)?v:(getPhases()[0]||'')}
 function closeOfferEdit(){$('offerEditModal').hidden=true}
 function saveOffer(e){
  e.preventDefault();
- const o={id:crypto.randomUUID(),phase:$('offerEditPhase').value,supplier:$('offerEditSupplier').value.trim(),amount:Number($('offerEditAmount').value||0),date:$('offerEditDate').value,phone:$('offerEditPhone').value.trim(),status:$('offerEditStatus').value,note:$('offerEditNote').value.trim()};
- data.offers=data.offers||[]; data.offers.push(o); save(); closeOfferEdit(); renderOffers();
+ const form=$('offerEditForm');
+ const id=form.dataset.edit||'';
+ const o={id:id||crypto.randomUUID(),phase:$('offerEditPhase').value,supplier:$('offerEditSupplier').value.trim(),amount:Number($('offerEditAmount').value||0),date:$('offerEditDate').value,phone:$('offerEditPhone').value.trim(),status:$('offerEditStatus').value,note:$('offerEditNote').value.trim()};
+ data.offers=data.offers||[];
+ const i=data.offers.findIndex(x=>x.id===o.id);
+ if(i>=0)data.offers[i]=o;else data.offers.push(o);
+ save(); delete form.dataset.edit; closeOfferEdit(); renderOffers();
+}
+function deleteOffer(id){
+ const o=(data.offers||[]).find(x=>x.id===id); if(!o)return;
+ if(!confirm(`Да се избрише понудата од „${o.supplier||'Без внесен мајстор / добавувач'}“?`))return;
+ data.offers=data.offers.filter(x=>x.id!==id); save(); renderOffers();
 }
 
 function openOfferDetail(id){const b=data.budget.find(v=>v.id===id);if(!b)return;const direct=b.material+b.labor+b.transport,diff=direct-b.contractor,actual=data.expenses.filter(x=>x.budgetId===id).reduce((s,x)=>s+x.total,0);$('offerDetail').innerHTML=`<div class="detail-grid"><div class="detail-item"><span>Фаза</span><strong>${esc(b.phase)}</strong></div><div class="detail-item"><span>Ставка</span><strong>${esc(b.item)}</strong></div><div class="detail-item"><span>Количина</span><strong>${b.qty||0} ${esc(b.unit||'')}</strong></div><div class="detail-item"><span>Директен материјал</span><strong>${money(b.material)}</strong></div><div class="detail-item"><span>Работа</span><strong>${money(b.labor)}</strong></div><div class="detail-item"><span>Транспорт</span><strong>${money(b.transport)}</strong></div><div class="detail-item"><span>Директно + работа</span><strong>${money(direct)}</strong></div><div class="detail-item"><span>Понуда од мајстор</span><strong>${money(b.contractor)}</strong></div><div class="detail-item"><span>Разлика</span><strong>${diff>=0?'+':''}${money(diff)}</strong></div><div class="detail-item"><span>Избрано</span><strong>${b.choice==='CONTRACTOR'?'Мајстор':'Директно'}</strong></div><div class="detail-item"><span>Реално потрошено</span><strong>${money(actual)}</strong></div></div><div class="section-card"><h3>Забелешка</h3><p>${esc(b.note||'Нема забелешка.')}</p></div><div class="modal-actions"><button class="primary" onclick="editOfferFromModal('${b.id}')">Уреди понуда</button><button class="secondary" onclick="closeOfferModal()">Затвори</button></div>`;$('offerModal').hidden=false}
