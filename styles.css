@@ -152,3 +152,8 @@ th{background:#f0eee9;color:#4d535a}
   .offer-card-actions{justify-content:flex-start}
   .offer-phase-title{font-size:22px}
 }
+
+
+/* Dashboard - Последни трошоци: прикажи околу 5 ставки, со scroll за повеќе */
+#recentExpenses{max-height:360px;overflow-y:auto;padding-right:6px;}
+#recentExpenses .phase-row{margin-bottom:10px;}
