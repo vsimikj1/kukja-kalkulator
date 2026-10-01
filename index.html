@@ -3,7 +3,7 @@
 <head>
 <script>
 (async()=>{
-  const KEY="kk-sw-reset-16-1";
+  const KEY="kk-sw-reset-16-14";
   if(!sessionStorage.getItem(KEY)){
     sessionStorage.setItem(KEY,"1");
     try{ const regs=await navigator.serviceWorker?.getRegistrations?.(); for(const r of (regs||[])) await r.unregister(); }catch(e){}
@@ -13,7 +13,7 @@
 })();
 </script><script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Мојата куќа</title><link rel="stylesheet" href="styles.css?v=16.6">
+<title>Мојата куќа</title><link rel="stylesheet" href="styles.css?v=16.14">
 
 </head>
 <body><main class="container">
@@ -72,4 +72,4 @@
   <div class="drive-note"><strong>Како работи:</strong> локалните податоци остануваат достапни и офлајн. Со Sync се ажурираат <code>Kukja_Gradba_Data.json</code> и <code>Kukja_Gradba.xlsx</code> во Google Drive. Excel exportот во Параметри останува непроменет.</div>
 </div></section>
 <section id="settings" class="panel"><div class="section-card"><h2>Параметри</h2><div class="form-grid"><label>Бруто m²<input id="grossArea" type="number"></label><label>Нето m²<input id="netArea" type="number"></label><label>Подрум m²<input id="basementArea" type="number"></label><label>Подрум висина<input id="basementHeight" type="number" step="0.01"></label><label>Висина над подрум<input id="levelHeight" type="number" step="0.01"></label><label>Останат дел висина<input id="otherHeight" type="number" step="0.01"></label><label>Резерва %<input id="reserve" type="number"></label><label>EUR/MKD<input id="eurRate" type="number" step="0.01"></label><label class="full">Забелешка<textarea id="projectNote" rows="4"></textarea></label></div><div class="actions"><button class="primary" id="saveSettings">Зачувај</button><button class="secondary" id="exportXlsx">Export Excel (.xlsx)</button><button class="secondary" id="backupJson">Backup JSON</button><label class="filebtn secondary">Import JSON<input id="importJson" type="file" accept="application/json"></label><button class="secondary" id="randomData">🧪 Додај random тест податоци</button><button class="danger" id="resetData">Избриши сè</button></div></div></section>
-</main><script src="https://accounts.google.com/gsi/client" async defer></script><script src="https://apis.google.com/js/api.js" async defer></script><script src="app.js?v=16.6"></script><script src="drive.js?v=16.6"></script><link rel="manifest" href="manifest.webmanifest?v=16.6"></body></html>
+</main><script src="https://accounts.google.com/gsi/client" async defer></script><script src="https://apis.google.com/js/api.js" async defer></script><script src="app.js?v=16.14"></script><script src="drive.js?v=16.14"></script><link rel="manifest" href="manifest.webmanifest?v=16.14"></body></html>
