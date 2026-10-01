@@ -107,7 +107,7 @@ th{background:#f0eee9;color:#4d535a}
 .phase-tab .phase-card-name{display:block;}
 .phase-tab .phase-card-meta{display:block;}
 .phase-tab .phase-card-status{grid-column:2;grid-row:1;align-self:start;}
-.phase-card-actions{grid-column:2;grid-row:2;display:flex;gap:7px;justify-content:flex-end;align-items:center;}
+.phase-card-actions{grid-column:1;grid-row:3;display:flex;gap:7px;justify-content:flex-start;align-items:center;}
 .phase-card-actions .secondary{background:#fff;border:1px solid #d7dde5;}
 .phase-card-actions .danger{background:#fff;color:#b43d2b;border:1px solid #e1b8b0;}
 .phase-edit-box{max-width:760px;}
