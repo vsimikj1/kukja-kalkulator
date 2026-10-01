@@ -135,7 +135,7 @@ function render(){
  renderPhaseNavigation();renderBudget();renderPhaseChart();renderRecent();renderExpenses();renderPayments();renderRefs();renderOffers();renderDashboardExpenses();
 }
 function renderBudget(){if(!$('budgetTable'))return;const actualBy={};data.expenses.forEach(x=>actualBy[x.budgetId]=(actualBy[x.budgetId]||0)+x.total);const rows=data.budget.filter(b=>b.phase===selectedPhase);$('budgetTable').innerHTML=rows.length?rows.map(b=>{const d=b.material+b.labor+b.transport,v=budgetPlanned(b),a=actualBy[b.id]||0;return `<tr><td>${esc(b.phase)}</td><td>${esc(b.item)}</td><td>${b.qty} ${esc(b.unit)}</td><td>${money(d)}</td><td>${money(b.contractor)}</td><td>${b.choice==='CONTRACTOR'?'Мајстор':'Директно'}</td><td>${money(v)}</td><td>${money(a)}</td><td>${money(v-a)}</td><td><button class="secondary" onclick="editBudget('${b.id}')">Уреди</button> <button class="danger small" onclick="deleteBudget('${b.id}')">×</button></td></tr>`}).join(''):'<tr><td colspan="10" class="empty">Нема буџетски ставки.</td></tr>'}
-function formatOfferAmount(v){return new Intl.NumberFormat('mk-MK',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(v||0))+' €'}
+function formatOfferAmount(v){return new Intl.NumberFormat('en-US',{maximumFractionDigits:0}).format(Number(v||0))+' €'}
 function renderOffers(){
  const phases=getPhases();
  const filter=$('offerPhaseFilter');
