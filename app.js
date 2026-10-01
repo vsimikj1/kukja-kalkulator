@@ -135,6 +135,7 @@ function render(){
  renderPhaseNavigation();renderBudget();renderPhaseChart();renderRecent();renderExpenses();renderPayments();renderRefs();renderOffers();renderDashboardExpenses();
 }
 function renderBudget(){if(!$('budgetTable'))return;const actualBy={};data.expenses.forEach(x=>actualBy[x.budgetId]=(actualBy[x.budgetId]||0)+x.total);const rows=data.budget.filter(b=>b.phase===selectedPhase);$('budgetTable').innerHTML=rows.length?rows.map(b=>{const d=b.material+b.labor+b.transport,v=budgetPlanned(b),a=actualBy[b.id]||0;return `<tr><td>${esc(b.phase)}</td><td>${esc(b.item)}</td><td>${b.qty} ${esc(b.unit)}</td><td>${money(d)}</td><td>${money(b.contractor)}</td><td>${b.choice==='CONTRACTOR'?'Мајстор':'Директно'}</td><td>${money(v)}</td><td>${money(a)}</td><td>${money(v-a)}</td><td><button class="secondary" onclick="editBudget('${b.id}')">Уреди</button> <button class="danger small" onclick="deleteBudget('${b.id}')">×</button></td></tr>`}).join(''):'<tr><td colspan="10" class="empty">Нема буџетски ставки.</td></tr>'}
+function formatOfferAmount(v){return new Intl.NumberFormat('mk-MK',{minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(v||0))+' €'}
 function renderOffers(){
  const phases=getPhases();
  const filter=$('offerPhaseFilter');
@@ -143,8 +144,18 @@ function renderOffers(){
  const selected=filter.value||'';
  filter.innerHTML='<option value="">Сите фази</option>'+phases.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
  filter.value=phases.includes(selected)?selected:'';
- const rows=(data.offers||[]).filter(o=>!filter.value||o.phase===filter.value).slice().reverse();
- list.innerHTML=rows.length?rows.map(o=>`<div class="offer-card"><div class="offer-card-main"><div><strong>${esc(o.supplier||'Без внесен мајстор / добавувач')}</strong><div class="muted">${esc(o.phase)} · ${esc(o.date||'—')}</div></div><div class="offer-amount">€ ${Number(o.amount||0).toFixed(2)}</div></div><div class="offer-card-meta"><span>${esc(o.status||'Примена')}</span>${o.phone?`<span>☎ ${esc(o.phone)}</span>`:''}</div>${o.note?`<div class="offer-card-note">${esc(o.note)}</div>`:''}</div>`).join(''):'<div class="empty">Нема понуди за избраната фаза.</div>';
+ const all=data.offers||[];
+ const rows=all.filter(o=>!filter.value||o.phase===filter.value).slice().reverse();
+ const lowestByPhase={};
+ phases.forEach(phase=>{
+   const phaseOffers=all.filter(o=>o.phase===phase && Number.isFinite(Number(o.amount)));
+   if(phaseOffers.length) lowestByPhase[phase]=Math.min(...phaseOffers.map(o=>Number(o.amount)||0));
+ });
+ list.innerHTML=rows.length?rows.map(o=>{
+   const amount=Number(o.amount||0);
+   const isLowest=lowestByPhase[o.phase]!==undefined && amount===lowestByPhase[o.phase] && all.filter(x=>x.phase===o.phase).length>1;
+   return `<div class="offer-card"><div class="offer-card-main"><div><strong>${esc(o.supplier||'Без внесен мајстор / добавувач')}</strong><div class="muted">${esc(o.phase)} · ${esc(o.date||'—')}</div></div><div class="offer-amount ${isLowest?'offer-lowest':''}">${formatOfferAmount(amount)}${isLowest?' <span class="offer-lowest-label">· најниска</span>':''}</div></div><div class="offer-card-meta"><span>${esc(o.status||'Примена')}</span>${o.phone?`<span>☎ ${esc(o.phone)}</span>`:''}</div>${o.note?`<div class="offer-card-note">${esc(o.note)}</div>`:''}</div>`;
+ }).join(''):'<div class="empty">Нема понуди за избраната фаза.</div>';
 }
 
 function addOffer(){
@@ -165,7 +176,7 @@ function closeOfferEdit(){$('offerEditModal').hidden=true}
 function saveOffer(e){
  e.preventDefault();
  const o={id:crypto.randomUUID(),phase:$('offerEditPhase').value,supplier:$('offerEditSupplier').value.trim(),amount:Number($('offerEditAmount').value||0),date:$('offerEditDate').value,phone:$('offerEditPhone').value.trim(),status:$('offerEditStatus').value,note:$('offerEditNote').value.trim()};
- data.offers=data.offers||[]; data.offers.push(o); save(); closeOfferEdit(); renderOffers(); alert('Понудата е зачувана.');
+ data.offers=data.offers||[]; data.offers.push(o); save(); closeOfferEdit(); renderOffers();
 }
 
 function openOfferDetail(id){const b=data.budget.find(v=>v.id===id);if(!b)return;const direct=b.material+b.labor+b.transport,diff=direct-b.contractor,actual=data.expenses.filter(x=>x.budgetId===id).reduce((s,x)=>s+x.total,0);$('offerDetail').innerHTML=`<div class="detail-grid"><div class="detail-item"><span>Фаза</span><strong>${esc(b.phase)}</strong></div><div class="detail-item"><span>Ставка</span><strong>${esc(b.item)}</strong></div><div class="detail-item"><span>Количина</span><strong>${b.qty||0} ${esc(b.unit||'')}</strong></div><div class="detail-item"><span>Директен материјал</span><strong>${money(b.material)}</strong></div><div class="detail-item"><span>Работа</span><strong>${money(b.labor)}</strong></div><div class="detail-item"><span>Транспорт</span><strong>${money(b.transport)}</strong></div><div class="detail-item"><span>Директно + работа</span><strong>${money(direct)}</strong></div><div class="detail-item"><span>Понуда од мајстор</span><strong>${money(b.contractor)}</strong></div><div class="detail-item"><span>Разлика</span><strong>${diff>=0?'+':''}${money(diff)}</strong></div><div class="detail-item"><span>Избрано</span><strong>${b.choice==='CONTRACTOR'?'Мајстор':'Директно'}</strong></div><div class="detail-item"><span>Реално потрошено</span><strong>${money(actual)}</strong></div></div><div class="section-card"><h3>Забелешка</h3><p>${esc(b.note||'Нема забелешка.')}</p></div><div class="modal-actions"><button class="primary" onclick="editOfferFromModal('${b.id}')">Уреди понуда</button><button class="secondary" onclick="closeOfferModal()">Затвори</button></div>`;$('offerModal').hidden=false}
