@@ -154,6 +154,6 @@ th{background:#f0eee9;color:#4d535a}
 }
 
 
-/* Dashboard - Последни трошоци: прикажи околу 5 ставки, со scroll за повеќе */
-#recentExpenses{max-height:360px;overflow-y:auto;padding-right:6px;}
+/* Dashboard - Последни трошоци: максимум околу 5 ставки во видливиот прозорец */
+#recentExpenses{height:300px;max-height:300px;overflow-y:auto;padding-right:6px;}
 #recentExpenses .phase-row{margin-bottom:10px;}

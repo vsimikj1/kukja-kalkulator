@@ -247,7 +247,8 @@ function renderPhaseChart(){
    filter.onchange=()=>renderPhaseChart();
  }
  const selected=filter?.value||'';
- const visiblePhases=selected?[selected]:phases;
+ if(!selected){$('phaseChart').innerHTML='';return;}
+ const visiblePhases=[selected];
  const rows=visiblePhases.map((p,i)=>{
    const info=phaseInfo(p);
    return {p,status:info.status,planned:info.budget,actual:info.spent,color:colors[phases.indexOf(p)%colors.length]};
