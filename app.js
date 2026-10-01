@@ -238,10 +238,29 @@ function closeOfferModal(){$('offerModal').hidden=true}
 
 function renderPhaseChart(){
  const colors=['#4f46e5','#0891b2','#16a34a','#f59e0b','#ef4444','#8b5cf6','#ec4899','#0f766e','#ea580c','#2563eb','#65a30d','#9333ea'];
- const rows=getPhases().map((p,i)=>{const planned=data.budget.filter(b=>b.phase===p).reduce((s,b)=>s+budgetPlanned(b),0);const actual=data.expenses.filter(x=>x.phase===p).reduce((s,x)=>s+x.total,0);return {p,planned,actual,color:colors[i%colors.length]};}).filter(x=>x.planned||x.actual);
- if(!rows.length){$('phaseChart').innerHTML='<div class="empty">Нема внесени буџетски ставки или трошоци.</div>';return;}
- const max=Math.max(...rows.flatMap(x=>[x.planned,x.actual]),1);
- $('phaseChart').innerHTML=rows.map(x=>{const pw=x.planned/max*100,aw=x.actual/max*100;const pct=x.planned?Math.min(100,x.actual/x.planned*100):0;return `<div class="chart-row"><div class="chart-label"><span>${esc(x.p)}</span><strong>${money(x.actual)}</strong></div><div class="chart-bars"><div class="chart-bar planned" style="width:${pw}%"><span>План: ${money(x.planned)}</span></div><div class="chart-bar actual" style="width:${aw}%;background:${x.color}"><span>Потрошено: ${money(x.actual)}</span></div></div><div class="chart-meta"><span>${pct.toFixed(0)}% од фазниот буџет</span><span>Останува: ${money(x.planned-x.actual)}</span></div></div>`}).join('');
+ const filter=$('dashboardPhaseFilter');
+ const phases=getPhases();
+ if(filter){
+   const selected=filter.value||'';
+   filter.innerHTML='<option value="">Сите фази</option>'+phases.map(p=>`<option value="${esc(p)}">${esc(p)}</option>`).join('');
+   filter.value=phases.includes(selected)?selected:'';
+   filter.onchange=()=>renderPhaseChart();
+ }
+ const selected=filter?.value||'';
+ const visiblePhases=selected?[selected]:phases;
+ const rows=visiblePhases.map((p,i)=>{
+   const info=phaseInfo(p);
+   return {p,status:info.status,planned:info.budget,actual:info.spent,color:colors[phases.indexOf(p)%colors.length]};
+ }).filter(x=>x.planned||x.actual);
+ if(!rows.length){$('phaseChart').innerHTML='<div class="empty">Нема внесен буџет или потрошено за избраната фаза.</div>';return;}
+ const max=Math.max(...rows.flatMap(x=>x.status==='Завршено'?[x.planned,x.actual]:[x.planned]),1);
+ $('phaseChart').innerHTML=rows.map(x=>{
+   const completed=x.status==='Завршено';
+   const pw=x.planned/max*100;
+   const aw=completed?x.actual/max*100:0;
+   const pct=completed&&x.planned?Math.min(100,x.actual/x.planned*100):0;
+   return `<div class="chart-row"><div class="chart-label"><span>${esc(x.p)}</span><strong>${completed?money(x.actual):money(x.planned)}</strong></div><div class="chart-bars"><div class="chart-bar planned" style="width:${pw}%"><span>Буџет: ${money(x.planned)}</span></div>${completed?`<div class="chart-bar actual" style="width:${aw}%;background:${x.color}"><span>Потрошено: ${money(x.actual)}</span></div>`:''}</div><div class="chart-meta">${completed?`<span>${pct.toFixed(0)}% од фазниот буџет</span><span>Останува: ${money(x.planned-x.actual)}</span>`:`<span>Фаза: ${esc(x.status)}</span>`}</div></div>`
+ }).join('');
 }
 function renderRecent(){const a=data.expenses.slice().reverse().slice(0,5);$('recentExpenses').innerHTML=a.length?a.map(x=>`<div class="phase-row clickable-row" onclick="openExpenseDetail('${x.id}')"><div class="phase-line"><span><strong>${esc(x.item)}</strong><br><span class="muted">${esc(x.phase)} · ${esc(x.supplier||'без добавувач')}</span></span><strong>${money(x.total)}</strong></div></div>`).join(''):'<div class="empty">Нема внесени трошоци.</div>'}
 function renderRefs(){$('budgetRef').innerHTML='<option value="">-- без врска --</option>'+data.budget.map(b=>`<option value="${b.id}">${esc(b.phase)} – ${esc(b.item)}</option>`).join('');$('paymentExpense').innerHTML=data.expenses.map(x=>`<option value="${x.id}">${x.date} – ${esc(x.item)} (${money(x.total)})</option>`).join('')||'<option value="">Нема трошоци</option>'}
