@@ -165,27 +165,25 @@ function renderOffers(){
        <div class="offer-item-main">
          <div class="offer-item-info">
            <strong class="offer-supplier">${esc(o.supplier||'Без внесен мајстор / добавувач')}</strong>
-           <div class="muted">${esc(o.date||'—')}</div>
+           <div class="offer-card-meta"><span>${esc(o.status||'Примена')} · ${esc(o.date||'—')}</span>${o.phone?`<span>☎ ${esc(o.phone)}</span>`:''}</div>
+           ${o.note?`<div class="offer-card-note">${esc(o.note)}</div>`:''}
          </div>
          <div class="offer-item-right">
            <div class="offer-amount ${isLowest?'offer-lowest':''}">${formatOfferAmount(amount)}${isLowest?' <span class="offer-lowest-label">· најниска</span>':''}</div>
-           <div class="offer-card-actions">
-             <button type="button" class="secondary small" onclick="editOffer('${o.id}')">Уреди</button>
-             <button type="button" class="danger small" onclick="deleteOffer('${o.id}')">Избриши</button>
-           </div>
          </div>
        </div>
-       <div class="offer-card-meta"><span>${esc(o.status||'Примена')}</span>${o.phone?`<span>☎ ${esc(o.phone)}</span>`:''}</div>
-       ${o.note?`<div class="offer-card-note">${esc(o.note)}</div>`:''}
+       <div class="offer-card-actions">
+         <button type="button" class="secondary small" onclick="editOffer('${o.id}')">Уреди</button>
+         <button type="button" class="danger small" onclick="deleteOffer('${o.id}')">Избриши</button>
+       </div>
      </div>`;
    }).join('');
-   return `<div class="offer-phase-group">
-     <div class="offer-phase-head"><div><strong>${esc(g.phase)}</strong><div class="offer-phase-count">${phaseOffersCount} ${phaseOffersCount===1?'понуда':'понуди'}</div></div></div>
+   return `<div class="offer-phase-section">
+     <h2 class="offer-phase-title">${esc(g.phase)}</h2>
      <div class="offer-items">${rows}</div>
    </div>`;
  }).join('');
 }
-
 function addOffer(){
  const phases=getPhases();
  $('offerEditTitle').textContent='Нова понуда';

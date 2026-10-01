@@ -121,29 +121,34 @@ th{background:#f0eee9;color:#4d535a}
 .offer-card-actions .secondary{background:#fff;border:1px solid #d7dde5}
 .offer-card-actions .danger{background:#fff;color:#b43d2b;border:1px solid #e1b8b0}
 
-/* V16.6 — Понуди го следат истиот распоред и визуелен јазик како Фази */
+/* V16.7 — Понуди: ист card интерфејс како Фази */
 #offers>.section-card{padding:0;background:transparent;border:0}
 #offers>.section-card>.section-title{background:transparent;padding:0 0 14px}
-#offers .offer-phase-only-filter{margin:0 0 14px;max-width:260px}
+#offers .offer-phase-only-filter{margin:0 0 20px;max-width:100%}
 #offers .offer-phase-only-filter label{display:block;max-width:none}
 #offers .offer-phase-only-filter select{width:100%;min-width:0;padding:10px}
-#offersList{display:flex;flex-direction:column;gap:13px;margin:0;padding:0}
-.offer-phase-group{width:100%;border:1px solid var(--ref-border);border-left:6px solid var(--ref-gray);border-radius:13px;background:var(--ref-card);color:var(--ref-text);padding:15px;text-align:left;box-shadow:none}
-.offer-phase-group:first-child{border-left-color:var(--ref-green)}
-.offer-phase-head{display:flex;align-items:center;justify-content:space-between;padding:0 1px 12px;border-bottom:1px solid var(--ref-border)}
-.offer-phase-head strong{font-size:19px;line-height:1.2}
-.offer-phase-count{font-size:15px;font-weight:400;color:#627386;margin-top:5px}
-.offer-items{display:flex;flex-direction:column;gap:9px;padding-top:10px}
-.offer-item{background:#fffdf9;border:1px solid var(--ref-border);border-radius:11px;padding:12px 13px}
+#offersList{display:flex;flex-direction:column;gap:24px;margin:0;padding:0}
+.offer-phase-section{width:100%}
+.offer-phase-title{margin:0 0 12px;font-size:24px;line-height:1.2;color:var(--ref-text)}
+.offer-items{display:flex;flex-direction:column;gap:13px}
+.offer-item{width:100%;border:1px solid var(--ref-border);border-left:6px solid var(--ref-gray);border-radius:13px;background:var(--ref-card);color:var(--ref-text);padding:17px 15px;box-sizing:border-box;box-shadow:none}
 .offer-item-main{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start}
 .offer-item-info{min-width:0}
-.offer-supplier{font-size:17px;line-height:1.25;display:block}
-.offer-item-right{display:flex;flex-direction:column;align-items:flex-end;gap:9px}
-.offer-item-right .offer-card-actions{margin-top:0}
-.offer-item .offer-card-meta{margin-top:9px}
-.offer-item .offer-card-note{margin-top:9px}
+.offer-supplier{font-size:19px;line-height:1.2;display:block}
+.offer-item-right{display:flex;align-items:flex-start;justify-content:flex-end}
+.offer-amount{font-size:19px;font-weight:700;line-height:1.2;white-space:nowrap}
+.offer-lowest{color:#16803c}
+.offer-lowest-label{font-size:16px;font-weight:800}
+.offer-card-meta{display:flex;gap:12px;flex-wrap:wrap;margin-top:7px;color:#627386;font-size:16px}
+.offer-card-meta span:first-child{border:0;padding:0;background:transparent}
+.offer-card-note{margin-top:7px;color:var(--ref-text);white-space:pre-wrap;font-size:16px}
+.offer-card-actions{display:flex;gap:7px;justify-content:flex-start;align-items:center;margin-top:14px}
+.offer-card-actions button{display:inline-flex!important;align-items:center;justify-content:center;min-width:78px;min-height:38px;font-weight:600;cursor:pointer}
+.offer-card-actions .secondary{background:#fff;border:1px solid #d7dde5}
+.offer-card-actions .danger{background:#fff;color:#b43d2b;border:1px solid #e1b8b0}
 @media(max-width:650px){
   .offer-item-main{grid-template-columns:1fr}
-  .offer-item-right{align-items:flex-start}
+  .offer-item-right{justify-content:flex-start;margin-top:4px}
   .offer-card-actions{justify-content:flex-start}
+  .offer-phase-title{font-size:22px}
 }
