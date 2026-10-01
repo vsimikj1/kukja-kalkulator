@@ -1,4 +1,4 @@
-// KK UI version 16.1 — Фази таб: само фази + Уреди/Избриши + Додај; без Ставка форма.
+// KK UI version 16.5.1 — Фази таб: само фази + Уреди/Избриши + Додај; без Ставка форма.
 const DB='kukja-gradba-v2';
 const BASE_PHASES=['Рушење и ископ','Карабина','Прозори и ролетни','Врати','Електрична инсталација','Водовод','Топлотна пумпа','Кошулица','Керамика','Фасада','Останати трошкови'];
 const defaults={phases:[...BASE_PHASES],phaseDetails:{},grossArea:140,netArea:120,basementArea:50,basementHeight:2.4,levelHeight:2.7,otherHeight:3,reserve:10,eurRate:61.5,totalBudget:0,projectNote:'Нова куќа ~10×14 m, приземје, двоводен кров. Нов подрум околу 7×7 m. Старата куќа и стариот подрум се отстрануваат.'};
