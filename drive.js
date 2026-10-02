@@ -93,31 +93,41 @@
     const base=existing?`https://www.googleapis.com/upload/drive/v3/files/${existing.id}?uploadType=multipart`:'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
     const r=await api(base,{method:existing?'PATCH':'POST',headers:{'Content-Type':`multipart/related; boundary=${boundary}`},body}); return r.json();
   }
-  function makeXlsxBytes(data){
-    if(!window.XLSX)throw new Error('Excel библиотеката не е достапна.');
+  async function makeXlsxBytes(data){
+    if(!window.ExcelJS)throw new Error('Excel библиотеката не е достапна.');
     const phases=Array.isArray(data?.settings?.phases)&&data.settings.phases.length?data.settings.phases:[];
     const details=data?.settings?.phaseDetails&&typeof data.settings.phaseDetails==='object'?data.settings.phaseDetails:{};
     const offers=Array.isArray(data?.offers)?data.offers:[];
     const moneyValue=v=>Number(v||0);
     const safeSheetName=(name,used)=>{
       let n=String(name||'Фаза').replace(/[\\\/?*\[\]:]/g,'-').trim().slice(0,31)||'Фаза';
-      const base=n; let i=2;
+      const base=n;let i=2;
       while(used.has(n)){const suffix=' '+i++;n=(base.slice(0,31-suffix.length)+suffix)}
       used.add(n);return n;
     };
-    const styleSheet=ws=>{
-      const range=ws['!ref']; if(!range)return;
-      const ref=XLSX.utils.decode_range(range);
-      for(let c=ref.s.c;c<=ref.e.c;c++){
-        const cell=ws[XLSX.utils.encode_cell({r:0,c})];
-        if(cell)cell.s={font:{bold:true},fill:{fgColor:{rgb:'F3E8D0'}},alignment:{vertical:'center'}};
+    const border={top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'},right:{style:'thin'}};
+    const applyBorders=(ws,minRow,maxRow,minCol,maxCol)=>{
+      for(let r=minRow;r<=maxRow;r++)for(let c=minCol;c<=maxCol;c++){
+        const cell=ws.getCell(r,c);
+        cell.border=border;
       }
-      ws['!autofilter']={ref:XLSX.utils.encode_range(ref)};
-      ws['!cols']=Array.from({length:ref.e.c-ref.s.c+1},()=>({wch:20}));
     };
-    const wb=XLSX.utils.book_new();
+    const tableStyle='TableStyleLight2';
+    const addTable=(ws,name,ref)=>{
+      const [from,to]=ref.split(':');
+      const range=ws.getCell(from).row+':'+ws.getCell(to).row;
+      const startCol=ws.getCell(from).col;
+      const endCol=ws.getCell(to).col;
+      ws.addTable({name,ref,headerRow:true,totalsRow:false,style:{theme:tableStyle,showRowStripes:true,showFirstColumn:false,showLastColumn:false}});
+      applyBorders(ws,ws.getCell(from).row,ws.getCell(to).row,startCol,endCol);
+    };
+    const wb=new ExcelJS.Workbook();
+    wb.creator='Калкулатор за градба';
+    wb.modified=new Date();
     const used=new Set();
 
+    // Резиме
+    const wsSummary=wb.addWorksheet('Резиме');
     const summary=[['Фаза','Статус','Буџет (€)','Потрошено (€)','Број на понуди','Најниска понуда (€)']];
     phases.forEach(phase=>{
       const d=details[phase]||{};
@@ -125,42 +135,56 @@
       const amounts=phaseOffers.map(o=>moneyValue(o.amount)).filter(v=>v>0);
       summary.push([phase,d.status||'Планирано',moneyValue(d.budget),moneyValue(d.spent),phaseOffers.length,amounts.length?Math.min(...amounts):'']);
     });
-    const wsSummary=XLSX.utils.aoa_to_sheet(summary);XLSX.utils.book_append_sheet(wb,wsSummary,'Резиме');styleSheet(wsSummary);
+    wsSummary.addRows(summary);
+    wsSummary.columns.forEach(col=>{col.width=22});
+    wsSummary.getColumn(1).width=30;wsSummary.getColumn(2).width=18;
+    wsSummary.getRow(1).font={bold:true};
+    addTable(wsSummary,'tblRezime','A1:F'+Math.max(2,summary.length));
 
-    phases.forEach(phase=>{
+    // Фаза tabs
+    phases.forEach((phase,pi)=>{
       const d=details[phase]||{};
       const phaseOffers=offers.filter(o=>String(o.phase||'').trim()===String(phase).trim());
-      const rows=[
-        ['Фаза',phase],
-        ['Статус',d.status||'Планирано'],
-        ['Почеток',d.start||''],
-        ['Крај',d.end||''],
-        ['Буџет (€)',moneyValue(d.budget)],
-        ['Потрошено (€)',moneyValue(d.spent)],
-        ['Забелешка',d.note||''],
-        [],
-        ['Понудувач','Износ (€)','Датум','Телефон','Статус','Забелешка']
+      const ws=wb.addWorksheet(safeSheetName(phase,used));
+      const info=[
+        ['Фаза',phase],['Статус',d.status||'Планирано'],['Почеток',d.start||''],['Крај',d.end||''],
+        ['Буџет (€)',moneyValue(d.budget)],['Потрошено (€)',moneyValue(d.spent)],['Забелешка',d.note||'']
       ];
-      phaseOffers.forEach(o=>rows.push([o.supplier||'',moneyValue(o.amount),o.date||'',o.phone||'',o.status||'',o.note||'']));
-      if(!phaseOffers.length)rows.push(['Нема внесени понуди.','','','','','']);
-      const ws=XLSX.utils.aoa_to_sheet(rows);
-      XLSX.utils.book_append_sheet(wb,ws,safeSheetName(phase,used));
-      ws['!cols']=[{wch:28},{wch:18},{wch:16},{wch:18},{wch:18},{wch:35}];
-      const headerRow=8;
-      for(let c=0;c<6;c++){const cell=ws[XLSX.utils.encode_cell({r:headerRow,c})];if(cell)cell.s={font:{bold:true},fill:{fgColor:{rgb:'F3E8D0'}},alignment:{vertical:'center'}};}
-      const ref=ws['!ref'];if(ref){const r=XLSX.utils.decode_range(ref);ws['!autofilter']={ref:`A${headerRow+1}:F${Math.max(headerRow+1,r.e.r+1)}`};}
+      ws.addRows(info);
+      ws.getColumn(1).width=24;ws.getColumn(2).width=36;
+      ws.getColumn(2).alignment={vertical:'top',wrapText:true};
+      ws.getColumn(1).font={bold:true};
+      applyBorders(ws,1,7,1,2);
+      // Keep the phase information visibly formatted while preserving the requested Light 2 table style.
+      ws.addTable({name:'tblInfo'+(pi+1),ref:'A1:B7',headerRow:false,style:{theme:tableStyle,showRowStripes:false,showFirstColumn:false,showLastColumn:false}});
+      // Offers table
+      const headerRow=9;
+      ws.getRow(headerRow).values=['Понудувач','Износ (€)','Датум','Телефон','Статус','Забелешка'];
+      if(phaseOffers.length){
+        phaseOffers.forEach(o=>ws.addRow([o.supplier||'',moneyValue(o.amount),o.date||'',o.phone||'',o.status||'',o.note||'']));
+      }else{
+        ws.addRow(['Нема внесени понуди.','','','','','']);
+      }
+      const lastRow=headerRow+Math.max(1,phaseOffers.length);
+      ws.getColumn(1).width=28;ws.getColumn(2).width=18;ws.getColumn(3).width=16;ws.getColumn(4).width=18;ws.getColumn(5).width=18;ws.getColumn(6).width=35;
+      ws.getRow(headerRow).font={bold:true};
+      addTable(ws,'tblOffers'+(pi+1),'A'+headerRow+':F'+lastRow);
     });
 
-    // Keep a dedicated offers sheet so all suppliers and amounts are also visible together.
-    const offerRows=[['Фаза','Понудувач','Износ (€)','Датум','Телефон','Статус','Забелешка']];
-    phases.forEach(phase=>offers.filter(o=>String(o.phase||'').trim()===String(phase).trim()).forEach(o=>offerRows.push([phase,o.supplier||'',moneyValue(o.amount),o.date||'',o.phone||'',o.status||'',o.note||''])));
-    const wsOffers=XLSX.utils.aoa_to_sheet(offerRows);XLSX.utils.book_append_sheet(wb,wsOffers,'Понуди');styleSheet(wsOffers);wsOffers['!cols']=[{wch:28},{wch:28},{wch:18},{wch:16},{wch:20},{wch:18},{wch:35}];
+    // All offers tab
+    const wsOffers=wb.addWorksheet('Понуди');
+    wsOffers.addRow(['Фаза','Понудувач','Износ (€)','Датум','Телефон','Статус','Забелешка']);
+    phases.forEach(phase=>offers.filter(o=>String(o.phase||'').trim()===String(phase).trim()).forEach(o=>wsOffers.addRow([phase,o.supplier||'',moneyValue(o.amount),o.date||'',o.phone||'',o.status||'',o.note||''])));
+    if(wsOffers.rowCount===1)wsOffers.addRow(['Нема внесени понуди.','','','','','','']);
+    wsOffers.getRow(1).font={bold:true};
+    [28,28,18,16,20,18,35].forEach((w,i)=>wsOffers.getColumn(i+1).width=w);
+    addTable(wsOffers,'tblSitePonudi','A1:G'+Math.max(2,wsOffers.rowCount));
 
-    return XLSX.write(wb,{bookType:'xlsx',type:'array',cellStyles:true});
+    return await wb.xlsx.writeBuffer();
   }
   async function sync(){
     if(busy)return;busy=true;setStatus('Синхронизација...','warn');setButtons(false);
-    try{await ensureAuth();const folderId=await ensureFolder();const data=window.KK.getData();const json=JSON.stringify(data,null,2);const xlsx=makeXlsxBytes(data);await uploadFile(JSON_NAME,json,'application/json',folderId);await uploadFile(XLSX_NAME,new Blob([xlsx],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',folderId);const now=new Date().toLocaleString('mk-MK');const s=driveState();s.lastSync=now;setDriveState(s);setLastSync(now);setStatus('Синхронизирано','ok');}
+    try{await ensureAuth();const folderId=await ensureFolder();const data=window.KK.getData();const json=JSON.stringify(data,null,2);const xlsx=await makeXlsxBytes(data);await uploadFile(JSON_NAME,json,'application/json',folderId);await uploadFile(XLSX_NAME,new Blob([xlsx],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}),'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',folderId);const now=new Date().toLocaleString('mk-MK');const s=driveState();s.lastSync=now;setDriveState(s);setLastSync(now);setStatus('Синхронизирано','ok');}
     catch(e){console.error(e);setStatus('Грешка при sync','error');alert('Google Drive sync не успеа:\n'+e.message);}
     finally{busy=false;setButtons(!!accessToken);}
   }
