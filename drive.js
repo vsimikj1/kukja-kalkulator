@@ -95,13 +95,68 @@
   }
   function makeXlsxBytes(data){
     if(!window.XLSX)throw new Error('Excel библиотеката не е достапна.');
-    const paidFor=id=>(data.payments||[]).filter(p=>p.expenseId===id).reduce((s,p)=>s+(+p.amount||0),0);
-    const planned=b=>b.choice==='CONTRACTOR'?(+b.contractor||0):((+b.material||0)+(+b.labor||0)+(+b.transport||0));
-    const ex=(data.expenses||[]).map(x=>({Датум:x.date,Фаза:x.phase,Ставка:x.item,Добавувач:x.supplier,Количина:x.quantity,Единица:x.unit,Материјал:x.material,Работа:x.labor,Транспорт:x.transport,Вкупно:x.total,Платено:paidFor(x.id),Неплатено:(+x.total||0)-paidFor(x.id),Фактура:x.invoice,Забелешка:x.note}));
-    const bu=(data.budget||[]).map(b=>({Фаза:b.phase,Ставка:b.item,Количина:b.qty,Единица:b.unit,'Директно + работа':(+b.material||0)+(+b.labor||0)+(+b.transport||0),'Понуда мајстор':b.contractor,Избрано:b.choice==='CONTRACTOR'?'Мајстор':'Директно',Планирано:planned(b),Забелешка:b.note}));
-    const py=(data.payments||[]).map(p=>({Датум:p.date,Трошок:(data.expenses||[]).find(x=>x.id===p.expenseId)?.item||'',Рата:p.installment,Износ:p.amount,Начин:p.method,Забелешка:p.note}));
-    const sum=[['Параметар','Вредност'],['Планиран буџет',(data.budget||[]).reduce((s,b)=>s+planned(b),0)],['Резерва %',data.settings?.reserve||0],['Реално потрошено',(data.expenses||[]).reduce((s,x)=>s+(+x.total||0),0)],['Платено',(data.expenses||[]).reduce((s,x)=>s+paidFor(x.id),0)]];
-    const wb=XLSX.utils.book_new(); [['Трошоци',ex],['Буџет',bu],['Плаќања',py],['Резиме',sum]].forEach(([n,rows])=>XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows),n)); return XLSX.write(wb,{bookType:'xlsx',type:'array'});
+    const phases=Array.isArray(data?.settings?.phases)&&data.settings.phases.length?data.settings.phases:[];
+    const details=data?.settings?.phaseDetails&&typeof data.settings.phaseDetails==='object'?data.settings.phaseDetails:{};
+    const offers=Array.isArray(data?.offers)?data.offers:[];
+    const moneyValue=v=>Number(v||0);
+    const safeSheetName=(name,used)=>{
+      let n=String(name||'Фаза').replace(/[\\\/?*\[\]:]/g,'-').trim().slice(0,31)||'Фаза';
+      const base=n; let i=2;
+      while(used.has(n)){const suffix=' '+i++;n=(base.slice(0,31-suffix.length)+suffix)}
+      used.add(n);return n;
+    };
+    const styleSheet=ws=>{
+      const range=ws['!ref']; if(!range)return;
+      const ref=XLSX.utils.decode_range(range);
+      for(let c=ref.s.c;c<=ref.e.c;c++){
+        const cell=ws[XLSX.utils.encode_cell({r:0,c})];
+        if(cell)cell.s={font:{bold:true},fill:{fgColor:{rgb:'F3E8D0'}},alignment:{vertical:'center'}};
+      }
+      ws['!autofilter']={ref:XLSX.utils.encode_range(ref)};
+      ws['!cols']=Array.from({length:ref.e.c-ref.s.c+1},()=>({wch:20}));
+    };
+    const wb=XLSX.utils.book_new();
+    const used=new Set();
+
+    const summary=[['Фаза','Статус','Буџет (€)','Потрошено (€)','Број на понуди','Најниска понуда (€)']];
+    phases.forEach(phase=>{
+      const d=details[phase]||{};
+      const phaseOffers=offers.filter(o=>String(o.phase||'').trim()===String(phase).trim());
+      const amounts=phaseOffers.map(o=>moneyValue(o.amount)).filter(v=>v>0);
+      summary.push([phase,d.status||'Планирано',moneyValue(d.budget),moneyValue(d.spent),phaseOffers.length,amounts.length?Math.min(...amounts):'']);
+    });
+    const wsSummary=XLSX.utils.aoa_to_sheet(summary);XLSX.utils.book_append_sheet(wb,wsSummary,'Резиме');styleSheet(wsSummary);
+
+    phases.forEach(phase=>{
+      const d=details[phase]||{};
+      const phaseOffers=offers.filter(o=>String(o.phase||'').trim()===String(phase).trim());
+      const rows=[
+        ['Фаза',phase],
+        ['Статус',d.status||'Планирано'],
+        ['Почеток',d.start||''],
+        ['Крај',d.end||''],
+        ['Буџет (€)',moneyValue(d.budget)],
+        ['Потрошено (€)',moneyValue(d.spent)],
+        ['Забелешка',d.note||''],
+        [],
+        ['Понудувач','Износ (€)','Датум','Телефон','Статус','Забелешка']
+      ];
+      phaseOffers.forEach(o=>rows.push([o.supplier||'',moneyValue(o.amount),o.date||'',o.phone||'',o.status||'',o.note||'']));
+      if(!phaseOffers.length)rows.push(['Нема внесени понуди.','','','','','']);
+      const ws=XLSX.utils.aoa_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb,ws,safeSheetName(phase,used));
+      ws['!cols']=[{wch:28},{wch:18},{wch:16},{wch:18},{wch:18},{wch:35}];
+      const headerRow=8;
+      for(let c=0;c<6;c++){const cell=ws[XLSX.utils.encode_cell({r:headerRow,c})];if(cell)cell.s={font:{bold:true},fill:{fgColor:{rgb:'F3E8D0'}},alignment:{vertical:'center'}};}
+      const ref=ws['!ref'];if(ref){const r=XLSX.utils.decode_range(ref);ws['!autofilter']={ref:`A${headerRow+1}:F${Math.max(headerRow+1,r.e.r+1)}`};}
+    });
+
+    // Keep a dedicated offers sheet so all suppliers and amounts are also visible together.
+    const offerRows=[['Фаза','Понудувач','Износ (€)','Датум','Телефон','Статус','Забелешка']];
+    phases.forEach(phase=>offers.filter(o=>String(o.phase||'').trim()===String(phase).trim()).forEach(o=>offerRows.push([phase,o.supplier||'',moneyValue(o.amount),o.date||'',o.phone||'',o.status||'',o.note||''])));
+    const wsOffers=XLSX.utils.aoa_to_sheet(offerRows);XLSX.utils.book_append_sheet(wb,wsOffers,'Понуди');styleSheet(wsOffers);wsOffers['!cols']=[{wch:28},{wch:28},{wch:18},{wch:16},{wch:20},{wch:18},{wch:35}];
+
+    return XLSX.write(wb,{bookType:'xlsx',type:'array',cellStyles:true});
   }
   async function sync(){
     if(busy)return;busy=true;setStatus('Синхронизација...','warn');setButtons(false);
