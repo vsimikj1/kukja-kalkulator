@@ -1,4 +1,5 @@
-Kukja Kalkulator V16.14
-- Fixed Dashboard Последни трошоци to read completed phase status robustly and match expenses by phase or linked budget item.
-- Preserved Трошоци по фаза behavior from V16.12.
-- Updated cache-busting/version markers to 16.14.
+V16.16
+- Последни трошоци now reads only from Фази.
+- Shows phases whose status is Завршено and whose Потрошено is greater than 0.
+- No Google Drive / Excel data is used for this section.
+- Drive Sync/Restore/Excel features remain unchanged.
