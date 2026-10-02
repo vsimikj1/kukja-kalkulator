@@ -1,4 +1,4 @@
-// KK UI version 16.5.1 — Фази таб: само фази + Уреди/Избриши + Додај; без Ставка форма.
+// KK UI version 16.15 — Фази таб: само фази + Уреди/Избриши + Додај; без Ставка форма.
 const DB='kukja-gradba-v2';
 const BASE_PHASES=['Рушење и ископ','Карабина','Прозори и ролетни','Врати','Електрична инсталација','Водовод','Топлотна пумпа','Кошулица','Керамика','Фасада','Останати трошкови'];
 const defaults={phases:[...BASE_PHASES],phaseDetails:{},grossArea:140,netArea:120,basementArea:50,basementHeight:2.4,levelHeight:2.7,otherHeight:3,reserve:10,eurRate:61.5,totalBudget:0,projectNote:'Нова куќа ~10×14 m, приземје, двоводен кров. Нов подрум околу 7×7 m. Старата куќа и стариот подрум се отстрануваат.'};
@@ -265,18 +265,18 @@ function renderPhaseChart(){
 }
 function renderRecent(){
  const norm=s=>String(s??'').trim().replace(/\s+/g,' ').toLocaleLowerCase('mk-MK');
- const phases=getPhases();
- const completed=phases.filter(p=>phaseInfo(p).status==='Завршено');
- const completedKeys=new Set(completed.map(norm));
- const completedBudgetIds=new Set(data.budget.filter(b=>completedKeys.has(norm(b.phase))).map(b=>b.id));
- const a=data.expenses.slice().filter(x=>{
-   const direct=completedKeys.has(norm(x.phase));
-   const byBudget=x.budgetId&&completedBudgetIds.has(x.budgetId);
+ const aliases={'рушење':'рушење и ископ','ископ':'рушење и ископ','подрум':'карабина','темели':'карабина','конструкција':'карабина','ytong':'карабина','кров':'карабина','прозори и врати':'прозори и ролетни','инсталации':'електрична инсталација','завршни работи':'керамика','друго':'останати трошоци'};
+ const canonical=s=>{const n=norm(s);return aliases[n]||n};
+ const completedKeys=new Set(getPhases().filter(p=>phaseInfo(p).status==='Завршено').map(canonical));
+ const completedBudgetIds=new Set(data.budget.filter(b=>completedKeys.has(canonical(b.phase))).map(b=>b.id));
+ const rows=data.expenses.filter(x=>{
+   const direct=completedKeys.has(canonical(x.phase));
+   const byBudget=!!x.budgetId&&completedBudgetIds.has(x.budgetId);
    return direct||byBudget;
- }).sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||data.expenses.indexOf(b)-data.expenses.indexOf(a));
+ }).slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||''))||data.expenses.indexOf(b)-data.expenses.indexOf(a));
  const box=$('recentExpenses');
  if(!box)return;
- box.innerHTML=a.length?a.map(x=>`<div class="phase-row clickable-row" onclick="openExpenseDetail('${x.id}')"><div class="phase-line"><span><strong>${esc(x.item)}</strong><br><span class="muted">${esc(x.phase||'Без фаза')} · ${esc(x.supplier||'без добавувач')}</span></span><strong>${money(x.total)}</strong></div></div>`).join(''):'<div class="empty">Нема внесени трошоци во завршени фази.</div>';
+ box.innerHTML=rows.length?rows.map(x=>`<div class="phase-row clickable-row" onclick="openExpenseDetail('${x.id}')"><div class="phase-line"><span><strong>${esc(x.item||'Трошок')}</strong><br><span class="muted">${esc(x.phase||'Без фаза')} · ${esc(x.supplier||'без добавувач')}</span></span><strong>${money(x.total)}</strong></div></div>`).join(''):'<div class="empty">Нема внесени трошоци во завршени фази.</div>';
 }
 function renderRefs(){$('budgetRef').innerHTML='<option value="">-- без врска --</option>'+data.budget.map(b=>`<option value="${b.id}">${esc(b.phase)} – ${esc(b.item)}</option>`).join('');$('paymentExpense').innerHTML=data.expenses.map(x=>`<option value="${x.id}">${x.date} – ${esc(x.item)} (${money(x.total)})</option>`).join('')||'<option value="">Нема трошоци</option>'}
 function openExpenseDetail(id){const x=data.expenses.find(e=>e.id===id);if(!x)return;const p=paidFor(id),r=x.total-p,ps=data.payments.filter(v=>v.expenseId===id).slice().sort((a,b)=>String(b.date).localeCompare(String(a.date)));const b=data.budget.find(v=>v.id===x.budgetId);$('expenseDetail').innerHTML=`<div class="detail-grid"><div class="detail-item"><span>Датум</span><strong>${esc(x.date)}</strong></div><div class="detail-item"><span>Фаза</span><strong>${esc(x.phase)}</strong></div><div class="detail-item"><span>Ставка</span><strong>${esc(x.item)}</strong></div><div class="detail-item"><span>Добавувач / мајстор</span><strong>${esc(x.supplier||'—')}</strong></div><div class="detail-item"><span>Материјал</span><strong>${money(x.material)}</strong></div><div class="detail-item"><span>Работа</span><strong>${money(x.labor)}</strong></div><div class="detail-item"><span>Транспорт</span><strong>${money(x.transport)}</strong></div><div class="detail-item"><span>Вкупно</span><strong>${money(x.total)}</strong></div><div class="detail-item"><span>Платено</span><strong>${money(p)}</strong></div><div class="detail-item"><span>Останува</span><strong>${money(r)}</strong></div><div class="detail-item"><span>Фактура / сметка</span><strong>${esc(x.invoice||'—')}</strong></div><div class="detail-item"><span>Буџетска ставка</span><strong>${esc(b?b.item:'Без врска')}</strong></div></div><div class="section-card"><h3>Плаќања</h3><div class="table-wrap"><table><thead><tr><th>Датум</th><th>Рата</th><th>Износ</th><th>Начин</th><th>Забелешка</th></tr></thead><tbody>${ps.length?ps.map(v=>`<tr><td>${esc(v.date)}</td><td>${v.installment}</td><td>${money(v.amount)}</td><td>${esc(v.method)}</td><td>${esc(v.note||'')}</td></tr>`).join(''):'<tr><td colspan="5" class="empty">Нема внесени плаќања.</td></tr>'}</tbody></table></div></div><div class="section-card"><h3>Забелешка</h3><p>${esc(x.note||'Нема забелешка.')}</p></div>`;$('expenseModal').hidden=false}
