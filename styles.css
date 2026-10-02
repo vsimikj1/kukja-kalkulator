@@ -157,3 +157,19 @@ th{background:#f0eee9;color:#4d535a}
 /* Dashboard - Последни трошоци: максимум околу 5 ставки во видливиот прозорец */
 #recentExpenses{height:300px;max-height:300px;overflow-y:auto;padding-right:6px;}
 #recentExpenses .phase-row{margin-bottom:10px;}
+/* V16.17 - clickable completed-phases summary */
+.summary-completed-clickable{cursor:pointer;transition:transform .15s,box-shadow .15s,background .15s}
+.summary-completed-clickable:hover{transform:translateY(-1px);box-shadow:0 5px 14px #00000012}
+.summary-completed-clickable:focus{outline:3px solid #bfdbfe;outline-offset:2px}
+.completed-phases-box{max-width:700px}
+.completed-phases-list{display:flex;flex-direction:column;gap:9px;margin-top:8px}
+.completed-phase-row{display:grid;grid-template-columns:12px 1fr auto;align-items:center;gap:11px;padding:14px 15px;border:1px solid var(--ref-border);border-radius:11px}
+.completed-phase-row.done{background:#e4f0e6;border-color:#b9d3bf;color:#315d3d}
+.completed-phase-row.progress{background:#e5efff;border-color:#b9d0f4;color:#24558f}
+.completed-phase-row.planned{background:var(--ref-bg);border-color:var(--ref-border);color:var(--ref-text)}
+.completed-phase-dot{width:10px;height:10px;border-radius:50%;background:#8a8f98}
+.completed-phase-row.done .completed-phase-dot{background:#3f7a4f}
+.completed-phase-row.progress .completed-phase-dot{background:#3b82f6}
+.completed-phase-row.planned .completed-phase-dot{background:#8a8f98}
+.completed-phase-status{font-size:14px;font-weight:700}
+@media(max-width:600px){.completed-phase-row{grid-template-columns:12px 1fr}.completed-phase-status{grid-column:2}}

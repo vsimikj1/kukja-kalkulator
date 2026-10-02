@@ -14,7 +14,7 @@ function init(){
  if($('expenseForm'))$('expenseForm').onsubmit=addExpense;if($('paymentForm'))$('paymentForm').onsubmit=addPayment;
  $('editTotalBudget').onclick=toggleTotalBudgetEditor;$('offersAddBudget').onclick=addOffer;$('saveTotalBudget').onclick=saveTotalBudget;$('autoTotalBudget').onclick=resetTotalBudgetAuto;
  $('usedBudgetCard').onclick=toggleExpenseDrilldown;$('closeExpenseModal').onclick=closeExpenseModal;$('offerPhaseFilter').onchange=renderOffers;$('usedBudgetCard').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggleExpenseDrilldown()}};$('closeExpenseDrilldown').onclick=()=>{$('expenseDrilldown').hidden=true};
- if($('clearForm'))$('clearForm').onclick=clearExpense;if($('phaseEditForm'))$('phaseEditForm').onsubmit=savePhaseEdit;if($('offerEditForm'))$('offerEditForm').onsubmit=saveOffer;if($('closePhaseEdit'))$('closePhaseEdit').onclick=closePhaseEdit;if($('closeOfferEdit'))$('closeOfferEdit').onclick=closeOfferEdit;if($('closeOfferEdit2'))$('closeOfferEdit2').onclick=closeOfferEdit;if($('closePhaseEdit2'))$('closePhaseEdit2').onclick=closePhaseEdit;if($('closeOfferModal'))$('closeOfferModal').onclick=closeOfferModal;if($('addPhase'))$('addPhase').onclick=addPhase;if($('saveSettings'))$('saveSettings').onclick=saveSettings;if($('resetData'))$('resetData').onclick=resetAll;if($('exportCsv'))$('exportCsv').onclick=exportCsv;if($('exportXlsx'))$('exportXlsx').onclick=exportXlsx;if($('backupJson'))$('backupJson').onclick=backup;if($('importJson'))$('importJson').onchange=importJson;if($('randomData'))$('randomData').onclick=randomData;
+ if($('completedPhasesCard')){ $('completedPhasesCard').onclick=openCompletedPhasesModal; $('completedPhasesCard').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openCompletedPhasesModal()}} } if($('closeCompletedPhases'))$('closeCompletedPhases').onclick=closeCompletedPhasesModal; if($('clearForm'))$('clearForm').onclick=clearExpense;if($('phaseEditForm'))$('phaseEditForm').onsubmit=savePhaseEdit;if($('offerEditForm'))$('offerEditForm').onsubmit=saveOffer;if($('closePhaseEdit'))$('closePhaseEdit').onclick=closePhaseEdit;if($('closeOfferEdit'))$('closeOfferEdit').onclick=closeOfferEdit;if($('closeOfferEdit2'))$('closeOfferEdit2').onclick=closeOfferEdit;if($('closePhaseEdit2'))$('closePhaseEdit2').onclick=closePhaseEdit;if($('closeOfferModal'))$('closeOfferModal').onclick=closeOfferModal;if($('addPhase'))$('addPhase').onclick=addPhase;if($('saveSettings'))$('saveSettings').onclick=saveSettings;if($('resetData'))$('resetData').onclick=resetAll;if($('exportCsv'))$('exportCsv').onclick=exportCsv;if($('exportXlsx'))$('exportXlsx').onclick=exportXlsx;if($('backupJson'))$('backupJson').onclick=backup;if($('importJson'))$('importJson').onchange=importJson;if($('randomData'))$('randomData').onclick=randomData;
  render();
 }
 window.KK={getData:()=>data,setData:(d)=>{data={settings:{...defaults,...(d?.settings||{})},budget:Array.isArray(d?.budget)?d.budget:[],expenses:Array.isArray(d?.expenses)?d.expenses:[],payments:Array.isArray(d?.payments)?d.payments:[],offers:Array.isArray(d?.offers)?d.offers:[]};data.settings.phases=Array.isArray(data.settings.phases)&&data.settings.phases.length?data.settings.phases:[...BASE_PHASES];data.settings.phaseDetails=(data.settings.phaseDetails&&typeof data.settings.phaseDetails==='object')?data.settings.phaseDetails:{};selectedPhase=getPhases()[0]||BASE_PHASES[0];save();fillSettings();renderPhaseNavigation();render()},save:save,onDataChanged:()=>{}};
@@ -116,6 +116,18 @@ function saveTotalBudget(){const v=+$('totalBudgetInput').value||0;if(v<=0){aler
 function resetTotalBudgetAuto(){data.settings.totalBudget=0;save();$('totalBudgetEditor').hidden=true;render()}
 function toggleExpenseDrilldown(){const box=$('expenseDrilldown');box.hidden=!box.hidden;if(!box.hidden){renderDashboardExpenses();box.scrollIntoView({behavior:'smooth',block:'start'})}}
 function renderDashboardExpenses(){const rows=data.expenses.slice().sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')) || data.expenses.indexOf(b)-data.expenses.indexOf(a));$('dashboardExpenseTable').innerHTML=rows.length?rows.map(x=>{const p=paidFor(x.id),r=x.total-p;return `<tr class="clickable-row" onclick="openExpenseDetail('${x.id}')"><td>${esc(x.date)}</td><td>${esc(x.phase)}</td><td>${esc(x.item)}</td><td>${esc(x.supplier||'—')}</td><td>${money(x.total)}</td><td>${money(p)}</td><td>${money(r)}</td></tr>`}).join(''):'<tr><td colspan="7" class="empty">Нема внесени трошоци.</td></tr>'}
+function renderCompletedPhasesModal(){
+ const box=$('completedPhasesList'); if(!box)return;
+ const phases=getPhases();
+ box.innerHTML=phases.map(p=>{
+   const info=phaseInfo(p); const st=info.status||'Планирано';
+   const cls=st==='Завршено'?'done':st==='Во тек'?'progress':'planned';
+   return `<div class="completed-phase-row ${cls}"><span class="completed-phase-dot"></span><strong>${esc(p)}</strong><span class="completed-phase-status">${esc(st)}</span></div>`;
+ }).join('') || '<div class="empty">Нема внесени фази.</div>';
+}
+function openCompletedPhasesModal(){renderCompletedPhasesModal();$('completedPhasesModal').hidden=false}
+function closeCompletedPhasesModal(){$('completedPhasesModal').hidden=true}
+
 function render(){
  const planned=data.budget.reduce((s,b)=>s+budgetPlanned(b),0),actual=data.expenses.reduce((s,x)=>s+x.total,0),paid=data.expenses.reduce((s,x)=>s+paidFor(x.id),0),unpaid=actual-paid;
  const total=totalBudgetValue(),remaining=Math.max(0,total-actual),usedPct=total?actual/total*100:0;
