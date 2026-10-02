@@ -115,8 +115,15 @@
     const tableStyle='TableStyleLight2';
     const addTable=(ws,name,ref)=>{
       const [from,to]=ref.split(':');
-      const startCell=ws.getCell(from);
-      const endCell=ws.getCell(to);
+      const parseCellRef=(a)=>{
+        const m=String(a).match(/^([A-Z]+)(\d+)$/i);
+        if(!m) throw new Error('Невалиден Excel range: '+ref);
+        let col=0;
+        for(const ch of m[1].toUpperCase()) col=col*26+(ch.charCodeAt(0)-64);
+        return {row:Number(m[2]),col};
+      };
+      const startCell=parseCellRef(from);
+      const endCell=parseCellRef(to);
       const headerRow=startCell.row;
       const startCol=startCell.col;
       const endCol=endCell.col;
@@ -126,6 +133,7 @@
         if(!header) header='Колона '+(c-startCol+1);
         columns.push({name:header});
       }
+      if(!columns.length) throw new Error('Excel табелата нема дефинирани колони: '+ref);
       ws.addTable({name,ref,headerRow:true,totalsRow:false,columns,style:{theme:tableStyle,showRowStripes:true,showFirstColumn:false,showLastColumn:false}});
       applyBorders(ws,headerRow,endCell.row,startCol,endCol);
     };
