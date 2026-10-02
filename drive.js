@@ -155,8 +155,6 @@
       ws.getColumn(2).alignment={vertical:'top',wrapText:true};
       ws.getColumn(1).font={bold:true};
       applyBorders(ws,1,7,1,2);
-      // Keep the phase information visibly formatted while preserving the requested Light 2 table style.
-      ws.addTable({name:'tblInfo'+(pi+1),ref:'A1:B7',headerRow:false,style:{theme:tableStyle,showRowStripes:false,showFirstColumn:false,showLastColumn:false}});
       // Offers table
       const headerRow=9;
       ws.getRow(headerRow).values=['Понудувач','Износ (€)','Датум','Телефон','Статус','Забелешка'];
