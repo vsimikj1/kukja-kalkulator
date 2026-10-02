@@ -115,11 +115,19 @@
     const tableStyle='TableStyleLight2';
     const addTable=(ws,name,ref)=>{
       const [from,to]=ref.split(':');
-      const range=ws.getCell(from).row+':'+ws.getCell(to).row;
-      const startCol=ws.getCell(from).col;
-      const endCol=ws.getCell(to).col;
-      ws.addTable({name,ref,headerRow:true,totalsRow:false,style:{theme:tableStyle,showRowStripes:true,showFirstColumn:false,showLastColumn:false}});
-      applyBorders(ws,ws.getCell(from).row,ws.getCell(to).row,startCol,endCol);
+      const startCell=ws.getCell(from);
+      const endCell=ws.getCell(to);
+      const headerRow=startCell.row;
+      const startCol=startCell.col;
+      const endCol=endCell.col;
+      const columns=[];
+      for(let c=startCol;c<=endCol;c++){
+        let header=String(ws.getCell(headerRow,c).value??'').trim();
+        if(!header) header='Колона '+(c-startCol+1);
+        columns.push({name:header});
+      }
+      ws.addTable({name,ref,headerRow:true,totalsRow:false,columns,style:{theme:tableStyle,showRowStripes:true,showFirstColumn:false,showLastColumn:false}});
+      applyBorders(ws,headerRow,endCell.row,startCol,endCol);
     };
     const wb=new ExcelJS.Workbook();
     wb.creator='Калкулатор за градба';
